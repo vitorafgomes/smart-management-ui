@@ -1,0 +1,43 @@
+import { PlanType } from './plan-type';
+import { SubscriptionStatus } from './subscription-status';
+import { BillingCycle } from './billing-cycle';
+
+export interface AddSubscriptionRequest {
+  tenantId: string;
+  planName: string;
+  planType: PlanType;
+  status: SubscriptionStatus;
+  pricePerCycle: number;
+  currency: string;
+  priceInUsd?: number;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  regionalPricing: string;
+  maxUsers: number;
+  currentUsers: number;
+  maxStorageGb: number;
+  currentStorageGb: number;
+  features: string;
+  startDate: string;
+  endDate?: string;
+  trialEndDate?: string;
+  isTrial: boolean;
+  billingCycle: BillingCycle;
+  discountPercentage?: number;
+  discountAmount?: number;
+  discountCurrency: string;
+  autoRenew: boolean;
+  nextBillingDate?: string;
+  paymentMethod: string;
+  paymentGateway: string;
+  paymentProviderCustomerId: string;
+  cancelledAt?: string;
+  cancellationReason: string;
+  gracePeriodDays: number;
+  taxRate?: number;
+  taxType: string;
+  taxInclusive: boolean;
+  billingCountry: string;
+  billingState: string;
+  billingPostalCode: string;
+}

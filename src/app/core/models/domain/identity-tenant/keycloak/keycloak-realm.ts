@@ -1,0 +1,45 @@
+import { KeycloakRealmTheme } from './keycloak-realm-theme';
+
+export interface KeycloakRealm {
+  id: string;
+  realm: string;
+  displayName: string;
+  displayNameHtml: string;
+  enabled: boolean;
+  sslRequired: boolean;
+  registrationAllowed: boolean;
+  registrationEmailAsUserName: boolean;
+  rememberMe: boolean;
+  verifyEmail: boolean;
+  loginWithEmailAllowed: boolean;
+  duplicateEmailsAllowed: boolean;
+  resetPasswordAllowed: boolean;
+  editUserNameAllowed: boolean;
+  bruteForceProtected: boolean;
+  permanentLockout: boolean;
+  maxFailureWaitSeconds: number;
+  minimumQuickLoginWaitSeconds: number;
+  waitIncrementSeconds: number;
+  quickLoginCheckMilliSeconds: number;
+  maxDeltaTimeSeconds: number;
+  failureFactor: number;
+  defaultSignatureAlgorithm: string;
+  revokeRefreshToken: boolean;
+  refreshTokenMaxReuse: number;
+  accessTokenLifespan: number;
+  accessTokenLifespanForImplicitFlow: number;
+  ssoSessionIdleTimeout: number;
+  ssoSessionMaxLifespan: number;
+  offlineSessionIdleTimeout: number;
+  accessCodeLifespan: number;
+  accessCodeLifespanUserAction: number;
+  accessCodeLifespanLogin: number;
+  actionTokenGeneratedByAdminLifespan: number;
+  actionTokenGeneratedByUserLifespan: number;
+  smtpServer: Record<string, string>;
+  browserSecurityHeaders: KeycloakRealmTheme;
+  loginTheme: string;
+  accountTheme: string;
+  adminTheme: string;
+  emailTheme: string;
+}

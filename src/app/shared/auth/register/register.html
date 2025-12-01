@@ -1,0 +1,258 @@
+<!-- Loading Overlay -->
+@if (showLoadingOverlay) {
+  <div class="registration-overlay">
+    <div class="registration-modal bg-dark bg-opacity-90 rounded-4 p-4 p-md-5">
+      <div class="text-center mb-4">
+        <h4 class="text-white mb-2">Setting up your account</h4>
+        <p class="text-white-50 small mb-0">Please wait while we configure everything...</p>
+      </div>
+
+      <div class="steps-container">
+        @for (step of registrationSteps; track step.id) {
+          <div class="step-item d-flex align-items-center mb-3" [class.step-completed]="step.status === 'completed'" [class.step-in-progress]="step.status === 'in_progress'" [class.step-error]="step.status === 'error'" [class.step-pending]="step.status === 'pending'">
+            <div class="step-indicator me-3">
+              @if (step.status === 'completed') {
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              } @else if (step.status === 'in_progress') {
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              } @else if (step.status === 'error') {
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              } @else {
+                <div class="step-dot"></div>
+              }
+            </div>
+            <span class="step-label">{{ step.label }}</span>
+          </div>
+        }
+      </div>
+
+      @if (registrationError) {
+        <div class="alert alert-danger mt-4 mb-3">
+          <small>{{ registrationError }}</small>
+        </div>
+        <button type="button" class="btn btn-outline-light w-100" (click)="closeLoadingOverlay()">
+          Try Again
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<div class="row justify-content-center">
+  <div class="col-11 col-md-8 col-lg-6 col-xl-5">
+
+    <div class="login-card p-4 p-md-6 bg-dark bg-opacity-50 translucent-dark rounded-4">
+      <h2 class="text-center mb-4">Register</h2>
+      <p class="text-center text-white opacity-50 mb-4">Create your account to get started</p>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+
+        <!-- Username -->
+        <div class="mb-3">
+          <label for="userName" class="form-label">Username <span class="text-danger">*</span></label>
+          <input type="text"
+                 class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+                 [class.is-invalid]="isFieldInvalid('userName')"
+                 id="userName"
+                 formControlName="userName"
+                 placeholder="Enter your username">
+          @if (isFieldInvalid('userName')) {
+            <div class="invalid-feedback">{{ getFieldError('userName') }}</div>
+          }
+        </div>
+
+        <!-- First Name & Last Name -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+                   [class.is-invalid]="isFieldInvalid('firstName')"
+                   id="firstName"
+                   formControlName="firstName"
+                   placeholder="First name">
+            @if (isFieldInvalid('firstName')) {
+              <div class="invalid-feedback">{{ getFieldError('firstName') }}</div>
+            }
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+            <input type="text"
+                   class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+                   [class.is-invalid]="isFieldInvalid('lastName')"
+                   id="lastName"
+                   formControlName="lastName"
+                   placeholder="Last name">
+            @if (isFieldInvalid('lastName')) {
+              <div class="invalid-feedback">{{ getFieldError('lastName') }}</div>
+            }
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="mb-3">
+          <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+          <input type="email"
+                 class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+                 [class.is-invalid]="isFieldInvalid('email')"
+                 id="email"
+                 formControlName="email"
+                 placeholder="Enter your email">
+          @if (isFieldInvalid('email')) {
+            <div class="invalid-feedback">{{ getFieldError('email') }}</div>
+          }
+        </div>
+
+        <!-- Password -->
+        <div class="mb-3">
+          <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+          <div class="position-relative">
+            <input [type]="showPassword ? 'text' : 'password'"
+                   class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25 pe-5"
+                   [class.is-invalid]="isFieldInvalid('password')"
+                   id="password"
+                   formControlName="password"
+                   placeholder="Enter your password">
+            <svg width="20" height="20"
+                 stroke="rgba(255,255,255,0.5)"
+                 fill="none"
+                 class="position-absolute"
+                 style="right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer;"
+                 (click)="togglePasswordVisibility()">
+              @if (showPassword) {
+                <use href="/assets/icons/sprite.svg#eye-off"></use>
+              } @else {
+                <use href="/assets/icons/sprite.svg#eye"></use>
+              }
+            </svg>
+          </div>
+          @if (isFieldInvalid('password')) {
+            <div class="text-danger small mt-1">{{ getFieldError('password') }}</div>
+          }
+          <div class="form-text text-white-50 small">
+            Min. 8 characters with uppercase, lowercase, number and special character
+          </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="mb-3">
+          <label for="confirmPassword" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+          <div class="position-relative">
+            <input [type]="showConfirmPassword ? 'text' : 'password'"
+                   class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25 pe-5"
+                   [class.is-invalid]="isFieldInvalid('confirmPassword') || registerForm.hasError('passwordMismatch')"
+                   id="confirmPassword"
+                   formControlName="confirmPassword"
+                   placeholder="Confirm your password">
+            <svg width="20" height="20"
+                 stroke="rgba(255,255,255,0.5)"
+                 fill="none"
+                 class="position-absolute"
+                 style="right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer;"
+                 (click)="toggleConfirmPasswordVisibility()">
+              @if (showConfirmPassword) {
+                <use href="/assets/icons/sprite.svg#eye-off"></use>
+              } @else {
+                <use href="/assets/icons/sprite.svg#eye"></use>
+              }
+            </svg>
+          </div>
+          @if (isFieldInvalid('confirmPassword')) {
+            <div class="text-danger small mt-1">{{ getFieldError('confirmPassword') }}</div>
+          }
+          @if (registerForm.hasError('passwordMismatch') && f['confirmPassword'].touched) {
+            <div class="text-danger small mt-1">Passwords do not match</div>
+          }
+        </div>
+
+        <!-- Country Code -->
+        <div class="mb-3">
+          <label for="countryCode" class="form-label">Country</label>
+          <select class="form-select form-select-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+                  id="countryCode"
+                  formControlName="countryCode">
+            <option value="">Select your country</option>
+            @for (country of countries; track country.code) {
+              <option [value]="country.code">{{ country.flag }} {{ country.name }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Tenant Checkbox -->
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input is-valid"
+                   type="checkbox"
+                   id="showTenant"
+                   (change)="toggleTenantField()">
+            <label class="form-check-label" for="showTenant">
+              I have an organization/tenant code
+            </label>
+          </div>
+        </div>
+
+        <!-- Tenant Field (Hidden by default) -->
+        @if (showTenantField) {
+          <div class="mb-3">
+            <label for="tenant" class="form-label">Tenant/Organization Code</label>
+            <input type="text"
+                   class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+                   id="tenant"
+                   formControlName="tenant"
+                   placeholder="Enter your organization code">
+          </div>
+        }
+
+        <!-- Terms -->
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input is-valid"
+                   [class.is-invalid]="isFieldInvalid('terms')"
+                   type="checkbox"
+                   id="terms"
+                   formControlName="terms">
+            <label class="form-check-label" for="terms">
+              I agree to the
+              <a [routerLink]="[]" class="text-decoration-underline text-white fw-500">Terms of Service</a>
+              and
+              <a [routerLink]="[]" class="text-decoration-underline text-white fw-500">Privacy Policy</a>
+              <span class="text-danger">*</span>
+            </label>
+          </div>
+          @if (isFieldInvalid('terms')) {
+            <div class="text-danger small mt-1">You must accept the terms and conditions</div>
+          }
+        </div>
+
+        <!-- Submit Button -->
+        <div class="mb-3 d-grid">
+          <button type="submit"
+                  class="btn btn-primary btn-lg bg-primary bg-opacity-75"
+                  [disabled]="isSubmitting">
+            @if (isSubmitting) {
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Registering...
+            } @else {
+              Register
+            }
+          </button>
+        </div>
+
+        <!-- Login Link -->
+        <div class="opacity-75 text-center">
+          Already have an account?
+          <a routerLink="/auth/login" class="text-decoration-underline text-white fw-500">Login here</a>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-agent-config
+  namespace: monitoring  # Ajuste para o namespace desejado
+data:
+  agent.yaml: |
+    server:
+      log_level: info
+      http_listen_port: 12345
+
+    # Configuração do Faro Receiver
+    traces:
+      configs:
+        - name: default
+          receivers:
+            # Receiver OTLP para receber traces do Faro
+            otlp:
+              protocols:
+                http:
+                  endpoint: 0.0.0.0:4318
+                grpc:
+                  endpoint: 0.0.0.0:4317
+          remote_write:
+            # Enviar para Grafana Tempo (ajuste para seu endpoint)
+            - endpoint: http://tempo:4317
+              insecure: true
+          # Batch processor para otimizar envio
+          batch:
+            timeout: 5s
+            send_batch_size: 100
+
+    # Configuração do Logs (Loki)
+    logs:
+      configs:
+        - name: default
+          clients:
+            # Enviar logs para Grafana Loki (ajuste para seu endpoint)
+            - url: http://loki:3100/loki/api/v1/push
+          positions:
+            filename: /tmp/positions.yaml
+
+    # Configuração de Métricas (Prometheus)
+    metrics:
+      global:
+        scrape_interval: 15s
+      configs:
+        - name: default
+          remote_write:
+            # Enviar métricas para Prometheus/Mimir (ajuste para seu endpoint)
+            - url: http://prometheus:9090/api/v1/write
+
+    # Integração Faro
+    integrations:
+      faro_receiver:
+        # Endpoint onde o Faro Web SDK enviará os dados
+        receiver:
+          protocols:
+            http:
+              endpoint: 0.0.0.0:12347
+              # Configurar CORS se necessário
+              cors:
+                allowed_origins:
+                  - "*"  # Em produção, especifique domínios permitidos
+                allowed_headers:
+                  - "*"
+                max_age: 7200
+        # Processar e rotear dados do Faro
+        logs:
+          # Logs serão enviados para Loki
+          send_to_loki: true
+        traces:
+          # Traces serão enviados para Tempo
+          send_to_tempo: true
+        metrics:
+          # Métricas serão enviadas para Prometheus
+          send_to_prometheus: true

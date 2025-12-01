@@ -1,0 +1,75 @@
+<div class="main-content layout-trimmed profile-page position-relative">
+  <div class="profile-page-header-underlay bg-primary-gradient bg-primary-500"></div>
+
+  <div class="container-xl position-relative">
+    @if (isLoading) {
+      <div class="d-flex justify-content-center align-items-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    } @else if (error) {
+      <div class="alert alert-danger m-4" role="alert">
+        <svg class="sa-icon me-2">
+          <use href="/assets/icons/sprite.svg#alert-triangle"></use>
+        </svg>
+        {{ error }}
+      </div>
+    } @else if (tenant) {
+      <div class="profile-page-header rounded-3 body-bg shadow-3 mb-4">
+        <app-tenant-header [tenant]="tenant" />
+
+        <div class="profile-page-nav border-top">
+          <ul [(activeId)]="activeId" ngbNav #nav="ngbNav" class="nav nav-tabs-clean">
+            <li ngbNavItem="info">
+              <a ngbNavLink>
+                <svg class="sa-icon me-2">
+                  <use href="/assets/icons/sprite.svg#info"></use>
+                </svg>
+                General Info
+              </a>
+              <ng-template ngbNavContent>
+                <app-tenant-info [tenant]="tenant" (tenantUpdated)="onTenantUpdated($event)" />
+              </ng-template>
+            </li>
+            <li ngbNavItem="branding">
+              <a ngbNavLink>
+                <svg class="sa-icon me-2">
+                  <use href="/assets/icons/sprite.svg#image"></use>
+                </svg>
+                Branding
+              </a>
+              <ng-template ngbNavContent>
+                <app-tenant-branding [tenant]="tenant" (tenantUpdated)="onTenantUpdated($event)" />
+              </ng-template>
+            </li>
+            <li ngbNavItem="localization">
+              <a ngbNavLink>
+                <svg class="sa-icon me-2">
+                  <use href="/assets/icons/sprite.svg#globe"></use>
+                </svg>
+                Localization
+              </a>
+              <ng-template ngbNavContent>
+                <app-tenant-localization [tenant]="tenant" (tenantUpdated)="onTenantUpdated($event)" />
+              </ng-template>
+            </li>
+            <li ngbNavItem="compliance">
+              <a ngbNavLink>
+                <svg class="sa-icon me-2">
+                  <use href="/assets/icons/sprite.svg#shield"></use>
+                </svg>
+                Compliance
+              </a>
+              <ng-template ngbNavContent>
+                <app-tenant-compliance [tenant]="tenant" (tenantUpdated)="onTenantUpdated($event)" />
+              </ng-template>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tab-content" [ngbNavOutlet]="nav"></div>
+    }
+  </div>
+</div>
