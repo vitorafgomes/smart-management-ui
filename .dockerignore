@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+.npm
+
+# Build outputs
+dist
+.angular
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# Kubernetes
+k8s/
+
+# Tests
+coverage
+*.spec.ts
+
+# Documentation
+*.md
+LICENSE
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env*
+*.local
+
+# OS files
+.DS_Store
+Thumbs.db

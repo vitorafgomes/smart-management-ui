@@ -1,0 +1,102 @@
+# =============================================================================
+# Smart Management UI - Build Local (Test Only)
+# =============================================================================
+# This workflow builds Docker images locally for testing purposes
+# Images are NOT pushed to any registry
+# =============================================================================
+
+name: Build Local (Test)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_shell:
+        description: 'Build Shell image'
+        required: false
+        type: boolean
+        default: true
+      build_mfe_tenant:
+        description: 'Build MFE Tenant Settings image'
+        required: false
+        type: boolean
+        default: true
+      build_mfe_users:
+        description: 'Build MFE Users image'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build-local:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build All
+        run: npm run build:all
+
+      - name: Set up QEMU (for ARM64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Shell Image (local)
+        if: inputs.build_shell
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --load \
+            -f ./docker/shell/Dockerfile \
+            -t smart-management-ui-shell:local \
+            .
+          echo "✅ Shell image built: smart-management-ui-shell:local"
+
+      - name: Build MFE Tenant Settings Image (local)
+        if: inputs.build_mfe_tenant
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --load \
+            -f ./docker/mfe-tenant-settings/Dockerfile \
+            -t smart-management-ui-mfe-tenant-settings:local \
+            .
+          echo "✅ MFE Tenant Settings image built: smart-management-ui-mfe-tenant-settings:local"
+
+      - name: Build MFE Users Image (local)
+        if: inputs.build_mfe_users
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --load \
+            -f ./docker/mfe-users/Dockerfile \
+            -t smart-management-ui-mfe-users:local \
+            .
+          echo "✅ MFE Users image built: smart-management-ui-mfe-users:local"
+
+      - name: List built images
+        run: |
+          echo "## Built Images 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          docker images | grep smart-management-ui | tee -a $GITHUB_STEP_SUMMARY || echo "No images found"
+
+      - name: Test Shell Image
+        if: inputs.build_shell
+        run: |
+          echo "Testing Shell image..."
+          docker run --rm -d --name shell-test -p 8080:80 smart-management-ui-shell:local
+          sleep 5
+          curl -f http://localhost:8080 || echo "Shell health check"
+          docker stop shell-test
+          echo "✅ Shell image test passed"

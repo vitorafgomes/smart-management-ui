@@ -1,0 +1,84 @@
+# =============================================================================
+# Docker Compose - Smart Management UI
+# Microfrontend Architecture with Native Federation
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # Shell (Host Application)
+  # ===========================================================================
+  shell:
+    build:
+      context: .
+      dockerfile: docker/shell/Dockerfile
+    container_name: smart-admin-shell
+    ports:
+      - "4200:80"
+    networks:
+      - smart-management-network
+    depends_on:
+      mfe-tenant-settings:
+        condition: service_healthy
+      mfe-users:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "app=smart-management-ui"
+      - "component=shell"
+    restart: unless-stopped
+
+  # ===========================================================================
+  # MFE Tenant Settings
+  # ===========================================================================
+  mfe-tenant-settings:
+    build:
+      context: .
+      dockerfile: docker/mfe-tenant-settings/Dockerfile
+    container_name: smart-admin-mfe-tenant
+    ports:
+      - "4201:80"
+    networks:
+      - smart-management-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "app=smart-management-ui"
+      - "component=mfe-tenant-settings"
+    restart: unless-stopped
+
+  # ===========================================================================
+  # MFE Users
+  # ===========================================================================
+  mfe-users:
+    build:
+      context: .
+      dockerfile: docker/mfe-users/Dockerfile
+    container_name: smart-admin-mfe-users
+    ports:
+      - "4202:80"
+    networks:
+      - smart-management-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "app=smart-management-ui"
+      - "component=mfe-users"
+    restart: unless-stopped
+
+networks:
+  smart-management-network:
+    driver: bridge
+    name: smart-management-network

@@ -1,0 +1,20 @@
+# =============================================================================
+# Smart Management UI - Service
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: smart-management-ui
+  namespace: smart-management
+  labels:
+    app: smart-management-ui
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    app: smart-management-ui

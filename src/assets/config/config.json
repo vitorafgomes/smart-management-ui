@@ -1,0 +1,41 @@
+{
+  "apiUrl": "https://api.vitorafgomes.net/identity-tenant",
+  "keycloak": {
+    "url": "https://keycloak.vitorafgomes.net",
+    "realm": "smart-management",
+    "clientId": "smart-management-ui"
+  },
+  "features": {
+    "enableAuditLogs": true,
+    "enableMultiTenant": true,
+    "enableAdvancedFilters": true,
+    "enableRealTimeNotifications": true
+  },
+  "app": {
+    "name": "Smart Management",
+    "version": "1.0.0",
+    "defaultLanguage": "en-US",
+    "supportedLanguages": ["en-US", "pt-BR", "es-ES"],
+    "defaultCurrency": "USD",
+    "defaultTimezone": "America/New_York"
+  },
+  "logging": {
+    "level": "error",
+    "enableConsole": false,
+    "enableRemote": true
+  },
+  "external": {
+    "faroUrl": "https://faro.vitorafgomes.net/v1/traces",
+    "analyticsEnabled": true
+  },
+  "mfe": {
+    "tenantSettings": {
+      "remoteEntry": "/mfe-tenant/remoteEntry.js",
+      "exposedModule": "./TenantSettingsModule"
+    },
+    "users": {
+      "remoteEntry": "/mfe-users/remoteEntry.js",
+      "exposedModule": "./UsersModule"
+    }
+  }
+}

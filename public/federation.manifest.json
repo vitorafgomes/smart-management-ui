@@ -1,0 +1,4 @@
+{
+  "mfe-tenant-settings": "http://localhost:4201/remoteEntry.json",
+  "mfe-users": "http://localhost:4202/remoteEntry.json"
+}

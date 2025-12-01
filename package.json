@@ -4,9 +4,19 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:shell": "ng serve smart-admin",
+    "start:mfe-tenant": "ng serve mfe-tenant-settings --port 4201",
+    "start:mfe-users": "ng serve mfe-users --port 4202",
+    "start:all": "concurrently \"npm run start:shell\" \"npm run start:mfe-tenant\" \"npm run start:mfe-users\"",
     "build": "ng build",
+    "build:shell": "ng build smart-admin --configuration production",
+    "build:mfe-tenant": "ng build mfe-tenant-settings --configuration production",
+    "build:mfe-users": "ng build mfe-users --configuration production",
+    "build:shared-auth": "ng build shared-auth",
+    "build:all": "npm run build:shared-auth && npm run build:shell && npm run build:mfe-tenant && npm run build:mfe-users",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "lint": "ng lint",
     "format": "prettier --write src/**/*.{ts,html}"
   },
   "prettier": {
@@ -21,11 +31,13 @@
   },
   "private": true,
   "dependencies": {
+    "@angular-devkit/build-angular": "^21.0.1",
     "@angular/animations": "^20.3.7",
     "@angular/common": "^20.3.7",
     "@angular/compiler": "^20.3.7",
     "@angular/core": "^20.3.7",
     "@angular/forms": "^20.3.7",
+    "@angular/localize": "^21.0.2",
     "@angular/platform-browser": "^20.3.7",
     "@angular/router": "^20.3.7",
     "@fullcalendar/angular": "^6.1.19",
@@ -41,6 +53,7 @@
     "@ng-icons/font-awesome": "^32.1.0",
     "@ngrx/operators": "^20.1.0",
     "@ngrx/signals": "^20.1.0",
+    "@popperjs/core": "^2.11.8",
     "@tanstack/angular-table": "^8.21.3",
     "apexcharts": "^5.3.3",
     "bootstrap": "^5.3.7",
@@ -62,18 +75,21 @@
     "vanta": "^0.5.24"
   },
   "devDependencies": {
+    "@angular-architects/native-federation": "^20.0.0",
     "@angular/build": "^20.3.7",
     "@angular/cli": "^20.3.7",
     "@angular/compiler-cli": "^20.3.7",
     "@types/jasmine": "~5.1.0",
     "@types/lodash.merge": "^4.6.9",
     "@types/three": "^0.180.0",
+    "concurrently": "^9.1.2",
     "jasmine-core": "~5.12.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "ng-packagr": "^20.1.0",
     "typescript": "~5.9.3"
   }
 }

@@ -102,8 +102,8 @@ export class KeycloakAuthService {
       // Store tokens
       this.storeTokens(credentials.realm, response);
 
-      // Decode and store user info from token
-      await this.loadUserProfile(credentials.realm);
+      // Decode and store user info from token (pass token directly as it's not in state yet)
+      await this.loadUserProfile(credentials.realm, response.access_token);
 
       // Setup automatic token refresh
       this.setupTokenRefresh(response.expires_in, credentials.realm);
@@ -367,10 +367,12 @@ export class KeycloakAuthService {
 
   /**
    * Load user profile from Keycloak
+   * @param realm - The Keycloak realm
+   * @param accessToken - Optional token to use (useful when token is not yet in state)
    */
-  private async loadUserProfile(realm: string): Promise<void> {
+  private async loadUserProfile(realm: string, accessToken?: string): Promise<void> {
     try {
-      const token = this._state().accessToken;
+      const token = accessToken || this._state().accessToken;
       if (!token) return;
 
       const userInfoUrl = `${environment.keycloak.url}/realms/${realm}/protocol/openid-connect/userinfo`;

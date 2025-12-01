@@ -16,6 +16,8 @@
     "module": "preserve",
     "baseUrl": ".",
     "paths": {
+      "@shared-auth": ["./dist/shared-auth"],
+      "@shared-auth/*": ["./dist/shared-auth/*"],
       "@app/components/*": ["./src/app/components/*"],
       "@common/*": ["./src/app/common/*"],
       "@core/*": ["./src/app/core/*"],

@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: smart-management-ui
+
+resources:
+  - namespace.yaml
+  - shell-deployment.yaml
+  - mfe-tenant-settings-deployment.yaml
+  - mfe-users-deployment.yaml
+  - ingress.yaml
+
+commonLabels:
+  app: smart-management-ui
+  managed-by: kustomize
+
+# Images - override in overlays or via command line
+images:
+  - name: ${REGISTRY}/smart-management-ui/shell
+    newName: your-registry.com/smart-management-ui/shell
+    newTag: latest
+  - name: ${REGISTRY}/smart-management-ui/mfe-tenant-settings
+    newName: your-registry.com/smart-management-ui/mfe-tenant-settings
+    newTag: latest
+  - name: ${REGISTRY}/smart-management-ui/mfe-users
+    newName: your-registry.com/smart-management-ui/mfe-users
+    newTag: latest

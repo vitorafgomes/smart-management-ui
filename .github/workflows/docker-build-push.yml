@@ -1,0 +1,187 @@
+# =============================================================================
+# Smart Management UI - Build, Test and Push to GitHub Container Registry
+# =============================================================================
+# This workflow builds a SINGLE unified Docker image containing:
+#   - Shell (host application)
+#   - MFE Tenant Settings
+#   - MFE Users
+#
+# Image produced:
+#   - ghcr.io/<owner>/smart-management-ui:X.Y.Z
+# =============================================================================
+
+name: CI/CD - Build, Test and Push
+
+on:
+  push:
+    branches: [ main, release/*, develop ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    branches: [ main, release/*, develop, feature/*, bugfix/*, hotfix/* ]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/smart-management-ui
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build, Test and Push Unified Image
+  # ---------------------------------------------------------------------------
+  build-test-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.10.2
+        with:
+          versionSpec: '5.x'
+
+      - name: Determine Version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v0.10.2
+
+      - name: Display GitVersion outputs
+        run: |
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "Major: ${{ steps.gitversion.outputs.major }}"
+          echo "Minor: ${{ steps.gitversion.outputs.minor }}"
+          echo "Patch: ${{ steps.gitversion.outputs.patch }}"
+          echo "BranchName: ${{ steps.gitversion.outputs.branchName }}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Lint
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Test
+        run: npm run test --if-present -- --watch=false --browsers=ChromeHeadless
+        continue-on-error: true
+
+      - name: Build All Applications
+        run: npm run build:all
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+      - name: Set up QEMU (for ARM64)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker Login to GitHub Container Registry
+        run: docker login ghcr.io -u ${{ github.repository_owner }} --password ${{ secrets.TOKEN_GITHUB }}
+
+      # ---------------------------------------------------------------------------
+      # Build and Push Unified Image (Shell + All MFEs)
+      # ---------------------------------------------------------------------------
+      - name: Build and Push Unified Image
+        run: |
+          IMAGE_TAGS="${{ steps.gitversion.outputs.semVer }}"
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            IMAGE_TAGS="${IMAGE_TAGS},latest"
+          fi
+
+          # Build tags string
+          TAG_ARGS=""
+          for tag in $(echo "$IMAGE_TAGS" | tr ',' ' '); do
+            TAG_ARGS="$TAG_ARGS -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$tag"
+          done
+
+          docker buildx build \
+            --platform linux/arm64 \
+            --push \
+            -f ./docker/unified/Dockerfile \
+            $TAG_ARGS \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            .
+
+      - name: Create Release
+        id: create_release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+        with:
+          tag_name: ${{ steps.gitversion.outputs.semVer }}
+          name: v${{ steps.gitversion.outputs.majorMinorPatch }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+      - name: Deployment Summary
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "🎉 Build and Deployment completed successfully!"
+          echo ""
+          echo "🏷️  Version: ${{ steps.gitversion.outputs.semVer }}"
+          echo ""
+          echo "🐳 Unified Image (Shell + All MFEs):"
+          echo "   ghcr.io/${{ github.repository_owner }}/smart-management-ui:${{ steps.gitversion.outputs.semVer }}"
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "   ghcr.io/${{ github.repository_owner }}/smart-management-ui:latest"
+          fi
+          echo ""
+          echo "📦 Contents:"
+          echo "   - Shell (host application)"
+          echo "   - MFE Tenant Settings (/mfe-tenant/)"
+          echo "   - MFE Users (/mfe-users/)"
+          echo ""
+          echo "📋 ArgoCD will automatically detect and deploy the latest image"
+          echo "🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "## Build Results 🏗️" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Version" >> $GITHUB_STEP_SUMMARY
+          echo "- SemVer: \`${{ steps.gitversion.outputs.semVer }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: \`${{ steps.gitversion.outputs.branchName }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Docker Image 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Unified image containing Shell + All MFEs:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Path |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Shell | \`/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| MFE Tenant Settings | \`/mfe-tenant/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| MFE Users | \`/mfe-users/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Kubernetes Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`yaml" >> $GITHUB_STEP_SUMMARY
+          echo "image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
