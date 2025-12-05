@@ -65,7 +65,8 @@ export function initializeOpenTelemetry(config: OtelConfig): void {
       instrumentations: [
         // Fetch API instrumentation
         new FetchInstrumentation({
-          propagateTraceHeaderCorsUrls: [/.*/], // Propagate to all URLs
+          // Exclude Keycloak/auth endpoints from trace header propagation (CORS issue)
+          propagateTraceHeaderCorsUrls: [/^(?!.*keycloak).*$/i],
           clearTimingResources: true,
           applyCustomAttributesOnSpan: (span, request, response) => {
             span.setAttribute('http.request.method', request.method || 'GET');
@@ -76,7 +77,8 @@ export function initializeOpenTelemetry(config: OtelConfig): void {
         }),
         // XMLHttpRequest instrumentation
         new XMLHttpRequestInstrumentation({
-          propagateTraceHeaderCorsUrls: [/.*/],
+          // Exclude Keycloak/auth endpoints from trace header propagation (CORS issue)
+          propagateTraceHeaderCorsUrls: [/^(?!.*keycloak).*$/i],
         }),
         // Document load instrumentation (page load metrics)
         new DocumentLoadInstrumentation(),

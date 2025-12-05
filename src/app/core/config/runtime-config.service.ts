@@ -149,8 +149,8 @@ export class RuntimeConfigService {
         enableRemote: true
       },
       external: {
-        otelCollectorUrl: 'https://otel.vitorafgomes.net/v1/traces',
-        otelEnabled: true,
+        otelCollectorUrl: '',
+        otelEnabled: false,
         analyticsEnabled: true
       },
       mfe: {
