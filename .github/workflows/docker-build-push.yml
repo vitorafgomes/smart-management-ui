@@ -6,7 +6,7 @@
 #   - ghcr.io/<owner>/smart-management-ui/mfe-tenant - MFE Tenant Settings
 #   - ghcr.io/<owner>/smart-management-ui/mfe-users  - MFE Users
 #
-# Each image is deployed independently in Kubernetes
+# SMART BUILD: Only rebuilds images for components that have changed!
 # =============================================================================
 
 name: CI/CD - Build, Test and Push
@@ -29,9 +29,60 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
+  # Detect Changes - Determine which components need to be rebuilt
+  # ---------------------------------------------------------------------------
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      shell: ${{ steps.changes.outputs.shell }}
+      mfe-tenant: ${{ steps.changes.outputs.mfe-tenant }}
+      mfe-users: ${{ steps.changes.outputs.mfe-users }}
+      any-change: ${{ steps.changes.outputs.shell == 'true' || steps.changes.outputs.mfe-tenant == 'true' || steps.changes.outputs.mfe-users == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            shared: &shared
+              - 'projects/shared-auth/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'angular.json'
+              - 'tsconfig*.json'
+              - 'src/environments/**'
+              - 'docker/**'
+            shell:
+              - *shared
+              - 'src/**'
+              - 'docker/shell/**'
+            mfe-tenant:
+              - *shared
+              - 'projects/mfe-tenant-settings/**'
+              - 'docker/mfe-tenant-settings/**'
+            mfe-users:
+              - *shared
+              - 'projects/mfe-users/**'
+              - 'docker/mfe-users/**'
+
+      - name: Show detected changes
+        run: |
+          echo "🔍 Change Detection Results:"
+          echo "   Shell: ${{ steps.changes.outputs.shell }}"
+          echo "   MFE Tenant: ${{ steps.changes.outputs.mfe-tenant }}"
+          echo "   MFE Users: ${{ steps.changes.outputs.mfe-users }}"
+
+  # ---------------------------------------------------------------------------
   # Build and Test
   # ---------------------------------------------------------------------------
   build-test:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any-change == 'true'
     runs-on: ubuntu-latest
     outputs:
       semver: ${{ steps.gitversion.outputs.semVer }}
@@ -94,88 +145,162 @@ jobs:
           retention-days: 1
 
   # ---------------------------------------------------------------------------
-  # Build and Push Docker Images (Shell + MFEs)
+  # Build and Push Docker Images (Only changed components!)
   # ---------------------------------------------------------------------------
-  push-images:
-    needs: build-test
+  push-shell:
+    needs: [detect-changes, build-test]
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && needs.detect-changes.outputs.shell == 'true'
     permissions:
       contents: write
       packages: write
       id-token: write
-
-    strategy:
-      matrix:
-        include:
-          - name: shell
-            dockerfile: docker/shell/Dockerfile
-            image_suffix: shell
-          - name: mfe-tenant
-            dockerfile: docker/mfe-tenant-settings/Dockerfile
-            image_suffix: mfe-tenant
-          - name: mfe-users
-            dockerfile: docker/mfe-users/Dockerfile
-            image_suffix: mfe-users
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
-
-      - name: Set up QEMU (for ARM64)
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata for Docker
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/${{ matrix.image_suffix }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/shell
           tags: |
             type=raw,value=${{ needs.build-test.outputs.semver }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,prefix=sha-
-
-      - name: Build and Push ${{ matrix.name }}
+      - name: Build and Push Shell
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: docker/shell/Dockerfile
           platforms: linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+          cache-from: type=gha,scope=shell
+          cache-to: type=gha,scope=shell,mode=max
+      - name: Output
+        run: echo "📦 Built shell:${{ needs.build-test.outputs.semver }}"
 
-      - name: Output image info
-        run: |
-          echo "📦 Built and pushed: ${{ matrix.name }}"
-          echo "🏷️  Tags:"
-          echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n' | sed 's/^/   - /'
+  push-mfe-tenant:
+    needs: [detect-changes, build-test]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && needs.detect-changes.outputs.mfe-tenant == 'true'
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/mfe-tenant
+          tags: |
+            type=raw,value=${{ needs.build-test.outputs.semver }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,prefix=sha-
+      - name: Build and Push MFE Tenant
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/mfe-tenant-settings/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=mfe-tenant
+          cache-to: type=gha,scope=mfe-tenant,mode=max
+      - name: Output
+        run: echo "📦 Built mfe-tenant:${{ needs.build-test.outputs.semver }}"
+
+  push-mfe-users:
+    needs: [detect-changes, build-test]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && needs.detect-changes.outputs.mfe-users == 'true'
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/mfe-users
+          tags: |
+            type=raw,value=${{ needs.build-test.outputs.semver }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,prefix=sha-
+      - name: Build and Push MFE Users
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/mfe-users/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=mfe-users
+          cache-to: type=gha,scope=mfe-users,mode=max
+      - name: Output
+        run: echo "📦 Built mfe-users:${{ needs.build-test.outputs.semver }}"
 
   # ---------------------------------------------------------------------------
   # Create Release and Summary
   # ---------------------------------------------------------------------------
   release:
-    needs: [build-test, push-images]
+    needs: [detect-changes, build-test, push-shell, push-mfe-tenant, push-mfe-users]
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.build-test.result == 'success'
     permissions:
       contents: write
 
@@ -218,37 +343,112 @@ jobs:
   # Build Summary (runs always)
   # ---------------------------------------------------------------------------
   summary:
-    needs: [build-test, push-images]
+    needs: [detect-changes, build-test, push-shell, push-mfe-tenant, push-mfe-users]
     runs-on: ubuntu-latest
-    if: always() && github.event_name != 'pull_request'
+    if: always() && github.event_name != 'pull_request' && needs.build-test.result == 'success'
 
     steps:
       - name: Build Summary
+        env:
+          SHELL_CHANGED: ${{ needs.detect-changes.outputs.shell }}
+          MFE_TENANT_CHANGED: ${{ needs.detect-changes.outputs.mfe-tenant }}
+          MFE_USERS_CHANGED: ${{ needs.detect-changes.outputs.mfe-users }}
+          PUSH_SHELL_RESULT: ${{ needs.push-shell.result }}
+          PUSH_MFE_TENANT_RESULT: ${{ needs.push-mfe-tenant.result }}
+          PUSH_MFE_USERS_RESULT: ${{ needs.push-mfe-users.result }}
         run: |
-          echo "## Build Results 🏗️" >> $GITHUB_STEP_SUMMARY
+          echo "## 🏗️ Build Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Version" >> $GITHUB_STEP_SUMMARY
-          echo "- SemVer: \`${{ needs.build-test.outputs.semver }}\`" >> $GITHUB_STEP_SUMMARY
+
+          # Version info
+          echo "### 🏷️ Version" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| SemVer | \`${{ needs.build-test.outputs.semver }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Docker Images 🐳" >> $GITHUB_STEP_SUMMARY
+
+          # Change detection results
+          echo "### 🔍 Change Detection" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Changed | Build Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|---------|--------------|" >> $GITHUB_STEP_SUMMARY
+
+          # Shell status
+          if [ "$SHELL_CHANGED" == "true" ]; then
+            if [ "$PUSH_SHELL_RESULT" == "success" ]; then
+              echo "| Shell | ✅ Yes | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Shell | ✅ Yes | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| Shell | ⏭️ No | ⏭️ Skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # MFE Tenant status
+          if [ "$MFE_TENANT_CHANGED" == "true" ]; then
+            if [ "$PUSH_MFE_TENANT_RESULT" == "success" ]; then
+              echo "| MFE Tenant | ✅ Yes | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| MFE Tenant | ✅ Yes | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| MFE Tenant | ⏭️ No | ⏭️ Skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # MFE Users status
+          if [ "$MFE_USERS_CHANGED" == "true" ]; then
+            if [ "$PUSH_MFE_USERS_RESULT" == "success" ]; then
+              echo "| MFE Users | ✅ Yes | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| MFE Users | ✅ Yes | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| MFE Users | ⏭️ No | ⏭️ Skipped |" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**MFE Architecture - Separate Images:**" >> $GITHUB_STEP_SUMMARY
+
+          # Docker images section
+          echo "### 🐳 Docker Images" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Component | Image | K8s Service |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|-------|-------------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Shell | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/shell\` | \`shell.smart-management.svc.cluster.local\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| MFE Tenant | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-tenant\` | \`mfe-tenant-settings.smart-management.svc.cluster.local\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| MFE Users | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-users\` | \`mfe-users.smart-management.svc.cluster.local\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Image | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Shell | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/shell\` | \`${{ needs.build-test.outputs.semver }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| MFE Tenant | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-tenant\` | \`${{ needs.build-test.outputs.semver }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| MFE Users | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-users\` | \`${{ needs.build-test.outputs.semver }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pull Commands" >> $GITHUB_STEP_SUMMARY
+
+          # Pull commands (only for rebuilt images)
+          echo "### 📥 Pull Commands" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary>Click to expand pull commands</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/shell:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-tenant:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-users:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
+          if [ "$SHELL_CHANGED" == "true" ]; then
+            echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/shell:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "$MFE_TENANT_CHANGED" == "true" ]; then
+            echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-tenant:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "$MFE_USERS_CHANGED" == "true" ]; then
+            echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-users:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Kubernetes Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Deployment section
+          echo "### 🚀 Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Deploy all components using Helm" >> $GITHUB_STEP_SUMMARY
           echo "./helm/deploy.sh ${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Workflow link
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
