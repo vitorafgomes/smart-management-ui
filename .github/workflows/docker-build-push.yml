@@ -69,7 +69,11 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: |
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+          npm ci --legacy-peer-deps || npm ci --legacy-peer-deps || npm ci --legacy-peer-deps
 
       - name: Lint
         run: npm run lint --if-present
