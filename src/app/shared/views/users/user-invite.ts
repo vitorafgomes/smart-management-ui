@@ -1,7 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { UsersService } from '@core/services/api/identity-tenant/users.service';
+import { TenantStorageService } from '@core/services/storage/tenant-storage.service';
+import { IdentityTenantFacade } from '@core/stores/identity-tenant/identity-tenant.facade';
+import { AddUserRequest } from '@core/models/useCases/identity-tenant';
 
 @Component({
   selector: 'app-user-invite',
@@ -62,21 +66,49 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
                   </div>
 
                   <div class="mb-3">
-                    <label class="form-label">Username</label>
+                    <label class="form-label">Username <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" formControlName="username"
-                           placeholder="Optional - will be generated from email if empty">
+                           [class.is-invalid]="isInvalid('username')"
+                           placeholder="Enter username">
+                    <div class="invalid-feedback">Username is required.</div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Password <span class="text-danger">*</span></label>
+                      <input type="password" class="form-control" formControlName="password"
+                             [class.is-invalid]="isInvalid('password')"
+                             placeholder="Enter password">
+                      @if (inviteForm.get('password')?.hasError('required')) {
+                        <div class="invalid-feedback">Password is required.</div>
+                      } @else if (inviteForm.get('password')?.hasError('minlength')) {
+                        <div class="invalid-feedback">Password must be at least 8 characters.</div>
+                      } @else if (inviteForm.get('password')?.hasError('pattern')) {
+                        <div class="invalid-feedback">Password must contain uppercase, lowercase, number and special character.</div>
+                      }
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                      <input type="password" class="form-control" formControlName="confirmPassword"
+                             [class.is-invalid]="isInvalid('confirmPassword') || inviteForm.hasError('passwordMismatch')"
+                             placeholder="Confirm password">
+                      @if (inviteForm.get('confirmPassword')?.hasError('required')) {
+                        <div class="invalid-feedback">Please confirm the password.</div>
+                      } @else if (inviteForm.hasError('passwordMismatch')) {
+                        <div class="invalid-feedback">Passwords do not match.</div>
+                      }
+                    </div>
                   </div>
 
                   <div class="row">
                     <div class="col-md-6 mb-3">
                       <label class="form-label">Role <span class="text-danger">*</span></label>
-                      <select class="form-select" formControlName="role"
-                              [class.is-invalid]="isInvalid('role')">
+                      <select class="form-select" formControlName="roleId"
+                              [class.is-invalid]="isInvalid('roleId')">
                         <option value="">Select a role...</option>
-                        <option value="admin">Administrator</option>
-                        <option value="manager">Manager</option>
-                        <option value="user">User</option>
-                        <option value="viewer">Viewer</option>
+                        @for (role of roles(); track role.id) {
+                          <option [value]="role.id">{{ role.name }}</option>
+                        }
                       </select>
                       <div class="invalid-feedback">Please select a role.</div>
                     </div>
@@ -160,23 +192,65 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
   `,
   styles: ``
 })
-export class UserInvite {
+export class UserInvite implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly usersService = inject(UsersService);
+  private readonly tenantStorage = inject(TenantStorageService);
+  private readonly facade = inject(IdentityTenantFacade);
+
+  // Roles from Store
+  readonly roles = this.facade.activeRoles;
 
   inviteForm: FormGroup;
   isSaving = false;
+  errorMessage = '';
+
+  // Password pattern: at least 1 uppercase, 1 lowercase, 1 number, 1 special char
+  private readonly passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
 
   constructor() {
     this.inviteForm = this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      username: [''],
-      role: ['', Validators.required],
+      username: ['', Validators.required],
+      password: ['', [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(this.passwordPattern)
+      ]],
+      confirmPassword: ['', Validators.required],
+      roleId: ['', Validators.required],
       groups: [[]],
       sendInvite: [true]
-    });
+    }, { validators: this.passwordMatchValidator });
+  }
+
+  ngOnInit(): void {
+    // Load roles if not already loaded
+    const tenant = this.tenantStorage.getLastTenant();
+    if (tenant && this.roles().length === 0) {
+      this.facade.loadRoles({
+        tenantId: tenant.id,
+        isActive: true,
+        pageNumber: 1,
+        pageSize: 100
+      });
+    }
+  }
+
+  /**
+   * Custom validator to check if password and confirmPassword match
+   */
+  private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password');
+    const confirmPassword = control.get('confirmPassword');
+
+    if (password && confirmPassword && password.value !== confirmPassword.value) {
+      return { passwordMismatch: true };
+    }
+    return null;
   }
 
   isInvalid(controlName: string): boolean {
@@ -190,13 +264,53 @@ export class UserInvite {
       return;
     }
 
-    this.isSaving = true;
+    const tenant = this.tenantStorage.getLastTenant();
+    if (!tenant) {
+      this.errorMessage = 'No tenant selected. Please select a tenant first.';
+      return;
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log('User invited:', this.inviteForm.value);
-      this.isSaving = false;
-      this.router.navigate(['/users']);
-    }, 1000);
+    const formValue = this.inviteForm.value;
+
+    // Determine if selected role is admin
+    const selectedRole = this.roles().find(r => r.id === formValue.roleId);
+    const isAdminRole = selectedRole?.isSystemRole && selectedRole?.name?.toLowerCase() === 'admin';
+
+    const request: AddUserRequest = {
+      tenantId: tenant.id,
+      email: formValue.email,
+      username: formValue.username,
+      password: formValue.password,
+      confirmPassword: formValue.confirmPassword,
+      firstName: formValue.firstName,
+      lastName: formValue.lastName,
+      roleId: formValue.roleId,
+      isAdmin: isAdminRole ?? false,
+      isActive: true
+    };
+
+    this.isSaving = true;
+    this.errorMessage = '';
+
+    this.usersService.addUser(request).subscribe({
+      next: () => {
+        this.isSaving = false;
+        this.router.navigate(['/users']);
+      },
+      error: (err: { error?: { errors?: string[] | Record<string, string[]>; message?: string } }) => {
+        console.error('Error creating user:', err);
+        this.isSaving = false;
+        // Extract error message
+        if (err.error?.errors && Array.isArray(err.error.errors)) {
+          this.errorMessage = err.error.errors.join(', ');
+        } else if (err.error?.errors && typeof err.error.errors === 'object') {
+          this.errorMessage = Object.values(err.error.errors).flat().join(', ');
+        } else if (err.error?.message) {
+          this.errorMessage = err.error.message;
+        } else {
+          this.errorMessage = 'Failed to create user. Please try again.';
+        }
+      }
+    });
   }
 }

@@ -4,7 +4,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideToastr } from 'ngx-toastr';
 import { routes } from './app.routes';
-import { FaroErrorHandler } from './core/services/faro/faro-error-handler.service';
+import { OtelErrorHandler } from './core/services/telemetry/otel-error-handler.service';
 import { mockApiInterceptor } from './core/interceptors/mock-api.interceptor';
 import { authInterceptor, tenantInterceptor } from './core/interceptors/auth.interceptor';
 import { KeycloakAuthService } from './core/services/auth/keycloak-auth.service';
@@ -30,8 +30,8 @@ export const appConfig: ApplicationConfig = {
     ])),
     provideToastr(),
     provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })),
-    // Integração com Grafana Faro para captura de erros
-    { provide: ErrorHandler, useClass: FaroErrorHandler },
+    // OpenTelemetry error handler for error capture
+    { provide: ErrorHandler, useClass: OtelErrorHandler },
     // Initialize Keycloak authentication on app startup
     {
       provide: APP_INITIALIZER,

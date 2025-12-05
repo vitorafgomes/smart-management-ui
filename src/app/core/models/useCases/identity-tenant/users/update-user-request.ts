@@ -19,4 +19,6 @@ export interface UpdateUserRequest {
   stateProvince?: string;
   spokenLanguages?: string;
   workingHours?: string;
+  password?: string;
+  confirmPassword?: string;
 }

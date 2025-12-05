@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { AddUserRequest, FilterUsersRequest, toFilterUsersParams, UpdateUserRequest } from '@core/models/useCases/identity-tenant';
 import { User } from '@core/models/domain/identity-tenant';
 import { PagedResult, JsonPatchDocument, JsonPatchOperation } from '@core/models/common';
@@ -54,10 +54,13 @@ export class UsersService {
 
   /**
    * Get users with filters using FilterUsersRequest Use Case
+   * Note: Users endpoint wraps PagedResult in "users" property
    */
   getUsersByFilters(request: FilterUsersRequest): Observable<PagedResult<User>> {
     const params = toFilterUsersParams(request);
-    return this.http.get<PagedResult<User>>(`${this.apiUrl}/Filters`, { params });
+    return this.http.get<{ users: PagedResult<User> }>(`${this.apiUrl}/Filters`, { params }).pipe(
+      map(response => response.users)
+    );
   }
 
   /**

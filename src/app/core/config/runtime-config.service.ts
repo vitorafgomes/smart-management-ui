@@ -42,9 +42,10 @@ export interface RuntimeConfig {
     enableRemote: boolean;
   };
 
-  // External Services
+  // External Services / Telemetry
   external: {
-    faroUrl: string;
+    otelCollectorUrl: string;
+    otelEnabled: boolean;
     analyticsEnabled: boolean;
   };
 
@@ -148,7 +149,8 @@ export class RuntimeConfigService {
         enableRemote: true
       },
       external: {
-        faroUrl: 'https://faro.vitorafgomes.net/v1/traces',
+        otelCollectorUrl: 'https://otel.vitorafgomes.net/v1/traces',
+        otelEnabled: true,
         analyticsEnabled: true
       },
       mfe: {

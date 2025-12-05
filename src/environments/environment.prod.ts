@@ -56,9 +56,10 @@ export const environment: Environment = {
     enableRemote: true
   },
 
-  // External Services
+  // External Services / Telemetry
   external: {
-    faroUrl: 'https://faro.vitorafgomes.net/v1/traces',
+    otelCollectorUrl: 'https://otel.vitorafgomes.net/v1/traces',
+    otelEnabled: true,
     analyticsEnabled: true
   }
 };

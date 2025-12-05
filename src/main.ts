@@ -1,10 +1,17 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
 import { App } from './app/app';
-import { initializeFaroMonitoring } from './app/config/faro.config';
+import { initializeOpenTelemetry } from './app/config/otel.config';
+import { environment } from './environments/environment';
 
-// Inicializa Grafana Faro para monitoramento e observabilidade
-initializeFaroMonitoring();
+// Initialize OpenTelemetry for monitoring and observability
+initializeOpenTelemetry({
+  serviceName: 'smart-management-ui',
+  serviceVersion: environment.app.version,
+  environment: environment.production ? 'production' : 'development',
+  collectorUrl: environment.external.otelCollectorUrl,
+  enabled: environment.external.otelEnabled
+});
 
 bootstrapApplication(App, appConfig)
   .catch((err) => console.error(err));

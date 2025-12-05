@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { AddGroupRequest, FilterGroupsRequest, toFilterGroupsParams } from '@core/models/useCases/identity-tenant';
 import { Group } from '@core/models/domain/identity-tenant';
 import { PagedResult } from '@core/models/common';
@@ -45,9 +45,12 @@ export class GroupsService {
 
   /**
    * Get groups with filters using FilterGroupsRequest Use Case
+   * Note: Groups endpoint wraps PagedResult in "pagedResult" property
    */
   getGroupsByFilters(request: FilterGroupsRequest): Observable<PagedResult<Group>> {
     const params = toFilterGroupsParams(request);
-    return this.http.get<PagedResult<Group>>(`${this.apiUrl}/Filters`, { params });
+    return this.http.get<{ pagedResult: PagedResult<Group> }>(`${this.apiUrl}/Filters`, { params }).pipe(
+      map(response => response.pagedResult)
+    );
   }
 }

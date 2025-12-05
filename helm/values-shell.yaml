@@ -1,0 +1,83 @@
+# Smart Management UI - Shell Application Values
+# This file extends the generic values-shell.yaml from kube-deploy
+# Usage: helm upgrade --install smart-management-shell $HELM_CHART \
+#   -f $HELM_CHART/values-shell.yaml \
+#   -f ./helm/values-shell.yaml \
+#   -n smart-management
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/vitorafgomes/smart-management-ui/shell
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+nameOverride: "shell"
+fullnameOverride: "smart-management-shell"
+
+podLabels:
+  app.kubernetes.io/name: smart-management
+  app.kubernetes.io/role: shell
+  app.kubernetes.io/component: frontend
+  app.kubernetes.io/part-of: smart-management-ui
+
+# Gateway/HTTPRoute for Traefik - Shell receives all traffic
+gateway:
+  enabled: true
+  annotations:
+    traefik.io/router.entrypoints: websecure
+    traefik.io/router.tls: "true"
+  parentRefs:
+    - name: traefik-gateway
+      namespace: traefik
+      sectionName: websecure
+  hostnames:
+    - "smart-management.vitorafgomes.net"
+  rules:
+    # Shell handles root and all non-MFE routes
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 384Mi
+  requests:
+    cpu: 100m
+    memory: 192Mi
+
+# ConfigMap with MFE URLs using Kubernetes internal DNS
+configMap:
+  enabled: true
+  data:
+    # MFE Remote Entry URLs via Kubernetes DNS
+    MFE_TENANT_SETTINGS_URL: "http://mfe-tenant-settings.smart-management.svc.cluster.local"
+    MFE_USERS_URL: "http://mfe-users.smart-management.svc.cluster.local"
+    # API Gateway URL
+    API_GATEWAY_URL: "https://api.vitorafgomes.net"
+    # Auth Configuration
+    KEYCLOAK_URL: "https://auth.vitorafgomes.net"
+    KEYCLOAK_REALM: "smart-management"
+    KEYCLOAK_CLIENT_ID: "smart-management-ui"
+
+# mTLS for internal communication
+mtls:
+  enabled: false  # Enable when ready
+  server:
+    dnsNames:
+      - shell.smart-management.svc.cluster.local
+      - smart-management-shell.smart-management.svc.cluster.local
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    labels:
+      release: kps

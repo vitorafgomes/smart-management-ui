@@ -54,9 +54,10 @@ export interface Environment {
     enableRemote: boolean;
   };
 
-  // External Services
+  // External Services / Telemetry
   external: {
-    faroUrl: string;
+    otelCollectorUrl: string;
+    otelEnabled: boolean;
     analyticsEnabled: boolean;
   };
 }

@@ -1,0 +1,79 @@
+# Smart Management UI - MFE Applications Values
+# This file extends the generic values-mfe.yaml from kube-deploy
+# Usage for MFE Tenant Settings:
+#   helm upgrade --install mfe-tenant-settings $HELM_CHART \
+#     -f $HELM_CHART/values-mfe.yaml \
+#     -f ./helm/values-mfe.yaml \
+#     --set nameOverride=mfe-tenant-settings \
+#     --set fullnameOverride=mfe-tenant-settings \
+#     --set image.repository=ghcr.io/vitorafgomes/smart-management-ui/mfe-tenant \
+#     -n smart-management
+#
+# Usage for MFE Users:
+#   helm upgrade --install mfe-users $HELM_CHART \
+#     -f $HELM_CHART/values-mfe.yaml \
+#     -f ./helm/values-mfe.yaml \
+#     --set nameOverride=mfe-users \
+#     --set fullnameOverride=mfe-users \
+#     --set image.repository=ghcr.io/vitorafgomes/smart-management-ui/mfe-users \
+#     -n smart-management
+
+replicaCount: 2
+
+image:
+  # Override via --set for each MFE:
+  # --set image.repository=ghcr.io/vitorafgomes/smart-management-ui/mfe-tenant
+  # --set image.repository=ghcr.io/vitorafgomes/smart-management-ui/mfe-users
+  repository: nginx
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets:
+  - name: ghcr-secret
+
+# Override via --set for each MFE
+nameOverride: ""
+fullnameOverride: ""
+
+podLabels:
+  app.kubernetes.io/name: smart-management
+  app.kubernetes.io/role: mfe
+  app.kubernetes.io/component: frontend
+  app.kubernetes.io/part-of: smart-management-ui
+
+# MFEs are accessed via Kubernetes internal DNS
+# Gateway is disabled - Shell proxies to MFEs
+gateway:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+# ConfigMap not needed for MFEs - they receive config from Shell
+configMap:
+  enabled: false
+
+# mTLS for internal communication
+mtls:
+  enabled: false  # Enable when ready
+  server:
+    # Override via --set for each MFE
+    dnsNames: []
+      # For mfe-tenant-settings:
+      # - mfe-tenant-settings.smart-management.svc.cluster.local
+      # For mfe-users:
+      # - mfe-users.smart-management.svc.cluster.local
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    labels:
+      release: kps

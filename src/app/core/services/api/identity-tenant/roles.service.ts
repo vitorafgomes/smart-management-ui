@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { AddRoleRequest, FilterRolesRequest, toFilterRolesParams } from '@core/models/useCases/identity-tenant';
 import { Role } from '@core/models/domain/identity-tenant';
 import { PagedResult } from '@core/models/common';
@@ -45,9 +45,12 @@ export class RolesService {
 
   /**
    * Get roles with filters using FilterRolesRequest Use Case
+   * Note: Roles endpoint wraps PagedResult in "pagedResult" property
    */
   getRolesByFilters(request: FilterRolesRequest): Observable<PagedResult<Role>> {
     const params = toFilterRolesParams(request);
-    return this.http.get<PagedResult<Role>>(`${this.apiUrl}/Filters`, { params });
+    return this.http.get<{ pagedResult: PagedResult<Role> }>(`${this.apiUrl}/Filters`, { params }).pipe(
+      map(response => response.pagedResult)
+    );
   }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { UsersService } from '@core/services/api/identity-tenant/users.service';
 import { RolesService } from '@core/services/api/identity-tenant/roles.service';
 import { TenantStorageService } from '@core/services/storage/tenant-storage.service';
@@ -186,6 +186,35 @@ import { Subject, takeUntil, forkJoin, of, catchError } from 'rxjs';
                       </div>
                     </div>
 
+                    <hr class="my-4">
+                    <h6 class="mb-3">Change Password</h6>
+                    <p class="text-muted small mb-3">Leave blank to keep current password.</p>
+
+                    <div class="row">
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" formControlName="password"
+                               [class.is-invalid]="isInvalid('password')"
+                               placeholder="Enter new password">
+                        @if (editForm.get('password')?.hasError('minlength')) {
+                          <div class="invalid-feedback">Password must be at least 8 characters.</div>
+                        } @else if (editForm.get('password')?.hasError('pattern')) {
+                          <div class="invalid-feedback">Password must contain uppercase, lowercase, number and special character.</div>
+                        }
+                      </div>
+                      <div class="col-md-6 mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" formControlName="confirmPassword"
+                               [class.is-invalid]="isInvalid('confirmPassword') || editForm.hasError('passwordMismatch')"
+                               placeholder="Confirm new password">
+                        @if (editForm.get('confirmPassword')?.hasError('required') && editForm.get('password')?.value) {
+                          <div class="invalid-feedback">Please confirm the password.</div>
+                        } @else if (editForm.hasError('passwordMismatch')) {
+                          <div class="invalid-feedback">Passwords do not match.</div>
+                        }
+                      </div>
+                    </div>
+
                     <hr>
 
                     <div class="d-flex justify-content-end gap-2">
@@ -330,6 +359,9 @@ export class UserEdit implements OnInit, OnDestroy {
   errorMessage = '';
   userId = '';
 
+  // Password pattern: at least 1 uppercase, 1 lowercase, 1 number, 1 special char
+  private readonly passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+
   ngOnInit(): void {
     this.initForm();
     this.userId = this.route.snapshot.paramMap.get('id') || '';
@@ -364,8 +396,32 @@ export class UserEdit implements OnInit, OnDestroy {
       preferredTimezone: [''],
       preferredCurrency: [''],
       isActive: [true],
-      isAdmin: [false]
-    });
+      isAdmin: [false],
+      password: ['', [
+        Validators.minLength(8),
+        Validators.pattern(this.passwordPattern)
+      ]],
+      confirmPassword: ['']
+    }, { validators: this.passwordMatchValidator });
+  }
+
+  /**
+   * Custom validator to check if password and confirmPassword match
+   * Only validates if password field has a value
+   */
+  private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password');
+    const confirmPassword = control.get('confirmPassword');
+
+    // Only validate if password has a value
+    if (password?.value && confirmPassword?.value !== password.value) {
+      return { passwordMismatch: true };
+    }
+    // If password is filled but confirmPassword is empty
+    if (password?.value && !confirmPassword?.value) {
+      confirmPassword?.setErrors({ required: true });
+    }
+    return null;
   }
 
   private loadUser(): void {
@@ -526,10 +582,26 @@ export class UserEdit implements OnInit, OnDestroy {
     }
 
     // Usa o utilitário JsonPatchBuilder para comparar apenas os campos editáveis
-    return JsonPatchBuilder.compareFields(
+    const patchDocument = JsonPatchBuilder.compareFields(
       this.user as unknown as Record<string, unknown>,
       formValue,
       this.editableFields as string[]
     );
+
+    // Add password fields if password was provided (for changing password)
+    if (formValue['password'] && formValue['confirmPassword']) {
+      patchDocument.push({
+        op: 'replace',
+        path: '/password',
+        value: formValue['password']
+      });
+      patchDocument.push({
+        op: 'replace',
+        path: '/confirmPassword',
+        value: formValue['confirmPassword']
+      });
+    }
+
+    return patchDocument;
   }
 }

@@ -47,6 +47,7 @@ export class TenantsService {
 
   /**
    * Get tenants with filters
+   * Note: Tenants endpoint returns PagedResult directly (no wrapper)
    */
   getTenantsByFilters(filters: any): Observable<PagedResult<Tenant>> {
     return this.http.get<PagedResult<Tenant>>(`${this.apiUrl}/Filters`, {
@@ -56,6 +57,7 @@ export class TenantsService {
 
   /**
    * Search tenants by Keycloak Realm Name for autocomplete
+   * Note: Tenants endpoint returns PagedResult directly (no wrapper)
    * @param searchTerm - The search term (minimum 3 characters)
    * @param pageSize - Number of results to return (default: 10)
    */

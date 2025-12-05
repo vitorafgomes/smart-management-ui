@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { CurrentUserStore } from '@core/stores/current-user.store';
 import { PermissionsService } from '@core/services/permissions.service';
@@ -189,6 +189,35 @@ import { firstValueFrom } from 'rxjs';
               </select>
             </div>
           </div>
+
+          <hr class="my-4">
+
+          <h6 class="mb-3 text-muted">Change Password</h6>
+          <p class="text-muted small mb-3">Leave blank to keep current password.</p>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-control" formControlName="password"
+                     [class.is-invalid]="isInvalid('password')"
+                     placeholder="Enter new password">
+              @if (profileForm.get('password')?.hasError('minlength')) {
+                <div class="invalid-feedback">Password must be at least 8 characters.</div>
+              } @else if (profileForm.get('password')?.hasError('pattern')) {
+                <div class="invalid-feedback">Password must contain uppercase, lowercase, number and special character.</div>
+              }
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-control" formControlName="confirmPassword"
+                     [class.is-invalid]="isInvalid('confirmPassword') || profileForm.hasError('passwordMismatch')"
+                     placeholder="Confirm new password">
+              @if (profileForm.get('confirmPassword')?.hasError('required') && profileForm.get('password')?.value) {
+                <div class="invalid-feedback">Please confirm the password.</div>
+              } @else if (profileForm.hasError('passwordMismatch')) {
+                <div class="invalid-feedback">Passwords do not match.</div>
+              }
+            </div>
+          </div>
         </div>
 
         <div class="modal-footer">
@@ -222,6 +251,9 @@ export class ProfileInfo implements OnInit {
   isSaving = false;
   errorMessage: string | null = null;
 
+  // Password pattern: at least 1 uppercase, 1 lowercase, 1 number, 1 special char
+  private readonly passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+
   ngOnInit(): void {
     this.initForm();
   }
@@ -239,8 +271,31 @@ export class ProfileInfo implements OnInit {
       city: [user?.city || ''],
       preferredLanguage: [user?.preferredLanguage || ''],
       preferredTimezone: [user?.preferredTimezone || ''],
-      preferredCurrency: [user?.preferredCurrency || '']
-    });
+      preferredCurrency: [user?.preferredCurrency || ''],
+      password: ['', [
+        Validators.minLength(8),
+        Validators.pattern(this.passwordPattern)
+      ]],
+      confirmPassword: ['']
+    }, { validators: this.passwordMatchValidator });
+  }
+
+  /**
+   * Custom validator to check if password and confirmPassword match
+   */
+  private passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.get('password');
+    const confirmPassword = control.get('confirmPassword');
+
+    // Only validate if password has a value
+    if (password?.value && confirmPassword?.value !== password.value) {
+      return { passwordMismatch: true };
+    }
+    // If password is filled but confirmPassword is empty
+    if (password?.value && !confirmPassword?.value) {
+      confirmPassword?.setErrors({ required: true });
+    }
+    return null;
   }
 
   isInvalid(controlName: string): boolean {
@@ -289,7 +344,12 @@ export class ProfileInfo implements OnInit {
         city: formValue.city || undefined,
         preferredLanguage: formValue.preferredLanguage || undefined,
         preferredTimezone: formValue.preferredTimezone || undefined,
-        preferredCurrency: formValue.preferredCurrency || undefined
+        preferredCurrency: formValue.preferredCurrency || undefined,
+        // Include password fields if provided
+        ...(formValue.password && formValue.confirmPassword ? {
+          password: formValue.password,
+          confirmPassword: formValue.confirmPassword
+        } : {})
       };
 
       await firstValueFrom(this.usersService.updateUser(updateRequest));

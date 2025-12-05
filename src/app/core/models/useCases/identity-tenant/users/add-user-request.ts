@@ -3,6 +3,8 @@ export interface AddUserRequest {
   keycloakUserId?: string;
   email: string;
   username: string;
+  password: string;
+  confirmPassword: string;
   firstName: string;
   lastName: string;
   middleName?: string;
@@ -11,6 +13,7 @@ export interface AddUserRequest {
   phone?: string;
   mobile?: string;
   avatarUrl?: string;
+  roleId?: string;
   isAdmin: boolean;
   isActive: boolean;
   preferredLanguage?: string;

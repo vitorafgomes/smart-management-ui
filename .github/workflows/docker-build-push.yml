@@ -1,13 +1,12 @@
 # =============================================================================
 # Smart Management UI - Build, Test and Push to GitHub Container Registry
 # =============================================================================
-# This workflow builds a SINGLE unified Docker image containing:
-#   - Shell (host application)
-#   - MFE Tenant Settings
-#   - MFE Users
+# This workflow builds SEPARATE Docker images for MFE architecture:
+#   - ghcr.io/<owner>/smart-management-ui/shell      - Shell (host application)
+#   - ghcr.io/<owner>/smart-management-ui/mfe-tenant - MFE Tenant Settings
+#   - ghcr.io/<owner>/smart-management-ui/mfe-users  - MFE Users
 #
-# Image produced:
-#   - ghcr.io/<owner>/smart-management-ui:X.Y.Z
+# Each image is deployed independently in Kubernetes
 # =============================================================================
 
 name: CI/CD - Build, Test and Push
@@ -26,18 +25,19 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/smart-management-ui
+  IMAGE_BASE: ${{ github.repository_owner }}/smart-management-ui
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Build, Test and Push Unified Image
+  # Build and Test
   # ---------------------------------------------------------------------------
-  build-test-push:
+  build-test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
+    outputs:
+      semver: ${{ steps.gitversion.outputs.semVer }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
 
     steps:
       - name: Checkout
@@ -89,6 +89,41 @@ jobs:
           path: dist/
           retention-days: 1
 
+  # ---------------------------------------------------------------------------
+  # Build and Push Docker Images (Shell + MFEs)
+  # ---------------------------------------------------------------------------
+  push-images:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    strategy:
+      matrix:
+        include:
+          - name: shell
+            dockerfile: docker/shell/Dockerfile
+            image_suffix: shell
+          - name: mfe-tenant
+            dockerfile: docker/mfe-tenant-settings/Dockerfile
+            image_suffix: mfe-tenant
+          - name: mfe-users
+            dockerfile: docker/mfe-users/Dockerfile
+            image_suffix: mfe-users
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
       - name: Set up QEMU (for ARM64)
         uses: docker/setup-qemu-action@v3
 
@@ -102,88 +137,114 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---------------------------------------------------------------------------
-      # Build and Push Unified Image (Shell + All MFEs)
-      # ---------------------------------------------------------------------------
-      - name: Build and Push Unified Image
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}/${{ matrix.image_suffix }}
+          tags: |
+            type=raw,value=${{ needs.build-test.outputs.semver }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,prefix=sha-
+
+      - name: Build and Push ${{ matrix.name }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
+
+      - name: Output image info
         run: |
-          IMAGE_TAGS="${{ steps.gitversion.outputs.semVer }}"
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            IMAGE_TAGS="${IMAGE_TAGS},latest"
-          fi
+          echo "📦 Built and pushed: ${{ matrix.name }}"
+          echo "🏷️  Tags:"
+          echo "${{ steps.meta.outputs.tags }}" | tr ',' '\n' | sed 's/^/   - /'
 
-          # Build tags string
-          TAG_ARGS=""
-          for tag in $(echo "$IMAGE_TAGS" | tr ',' ' '); do
-            TAG_ARGS="$TAG_ARGS -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$tag"
-          done
+  # ---------------------------------------------------------------------------
+  # Create Release and Summary
+  # ---------------------------------------------------------------------------
+  release:
+    needs: [build-test, push-images]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
 
-          docker buildx build \
-            --platform linux/arm64 \
-            --push \
-            -f ./docker/unified/Dockerfile \
-            $TAG_ARGS \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
-            .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Create Release
-        id: create_release
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.gitversion.outputs.semVer }}
-          name: v${{ steps.gitversion.outputs.majorMinorPatch }}
+          tag_name: ${{ needs.build-test.outputs.semver }}
+          name: v${{ needs.build-test.outputs.semver }}
           draft: false
           prerelease: false
           generate_release_notes: true
 
       - name: Deployment Summary
-        if: github.event_name != 'pull_request'
         run: |
           echo "🎉 Build and Deployment completed successfully!"
           echo ""
-          echo "🏷️  Version: ${{ steps.gitversion.outputs.semVer }}"
+          echo "🏷️  Version: ${{ needs.build-test.outputs.semver }}"
           echo ""
-          echo "🐳 Unified Image (Shell + All MFEs):"
-          echo "   ghcr.io/${{ github.repository_owner }}/smart-management-ui:${{ steps.gitversion.outputs.semVer }}"
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "   ghcr.io/${{ github.repository_owner }}/smart-management-ui:latest"
-          fi
+          echo "🐳 Docker Images (MFE Architecture):"
           echo ""
-          echo "📦 Contents:"
-          echo "   - Shell (host application)"
-          echo "   - MFE Tenant Settings (/mfe-tenant/)"
-          echo "   - MFE Users (/mfe-users/)"
+          echo "   Shell (Host Application):"
+          echo "   ghcr.io/${{ env.IMAGE_BASE }}/shell:${{ needs.build-test.outputs.semver }}"
           echo ""
-          echo "📋 ArgoCD will automatically detect and deploy the latest image"
+          echo "   MFE Tenant Settings:"
+          echo "   ghcr.io/${{ env.IMAGE_BASE }}/mfe-tenant:${{ needs.build-test.outputs.semver }}"
+          echo ""
+          echo "   MFE Users:"
+          echo "   ghcr.io/${{ env.IMAGE_BASE }}/mfe-users:${{ needs.build-test.outputs.semver }}"
+          echo ""
+          echo "📋 Deploy with Helm:"
+          echo "   ./helm/deploy.sh ${{ needs.build-test.outputs.semver }}"
+          echo ""
           echo "🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+  # ---------------------------------------------------------------------------
+  # Build Summary (runs always)
+  # ---------------------------------------------------------------------------
+  summary:
+    needs: [build-test, push-images]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name != 'pull_request'
+
+    steps:
       - name: Build Summary
-        if: always()
         run: |
           echo "## Build Results 🏗️" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Version" >> $GITHUB_STEP_SUMMARY
-          echo "- SemVer: \`${{ steps.gitversion.outputs.semVer }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Branch: \`${{ steps.gitversion.outputs.branchName }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- SemVer: \`${{ needs.build-test.outputs.semver }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Docker Image 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "### Docker Images 🐳" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Unified image containing Shell + All MFEs:**" >> $GITHUB_STEP_SUMMARY
+          echo "**MFE Architecture - Separate Images:**" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Component | Path |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Shell | \`/\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| MFE Tenant Settings | \`/mfe-tenant/\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| MFE Users | \`/mfe-users/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Image | K8s Service |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Shell | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/shell\` | \`shell.smart-management.svc.cluster.local\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| MFE Tenant | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-tenant\` | \`mfe-tenant-settings.smart-management.svc.cluster.local\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| MFE Users | \`ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-users\` | \`mfe-users.smart-management.svc.cluster.local\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Commands" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/shell:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-tenant:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ghcr.io/${{ github.repository_owner }}/smart-management-ui/mfe-users:${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Kubernetes Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`yaml" >> $GITHUB_STEP_SUMMARY
-          echo "image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "# Deploy all components using Helm" >> $GITHUB_STEP_SUMMARY
+          echo "./helm/deploy.sh ${{ needs.build-test.outputs.semver }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
