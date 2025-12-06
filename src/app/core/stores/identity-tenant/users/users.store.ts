@@ -13,6 +13,7 @@ import {
   updateEntity,
   removeEntity,
   setAllEntities,
+  upsertEntities,
 } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -169,7 +170,9 @@ export const UsersStore = signalStore(
           return usersService.getUsersByFilters(request).pipe(
             tapResponse({
               next: (result: PagedResult<User>) => {
-                patchState(store, setAllEntities(result.entries));
+                // OTIMIZAÇÃO: upsertEntities acumula usuários no cache em vez de substituir
+                // Isso permite que o cache seja usado quando navegar para editar um usuário
+                patchState(store, upsertEntities(result.entries));
                 store.updatePaginationFromResponse(result);
                 store.finishOperation();
                 patchState(store, { lastUpdated: new Date() });

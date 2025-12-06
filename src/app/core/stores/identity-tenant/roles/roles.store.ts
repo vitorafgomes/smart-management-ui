@@ -13,6 +13,7 @@ import {
   updateEntity,
   removeEntity,
   setAllEntities,
+  upsertEntities,
 } from '@ngrx/signals/entities';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, switchMap, tap, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -178,7 +179,9 @@ export const RolesStore = signalStore(
           return rolesService.getRolesByFilters(request).pipe(
             tapResponse({
               next: (result: PagedResult<Role>) => {
-                patchState(store, setAllEntities(result.entries));
+                // OTIMIZAÇÃO: upsertEntities acumula roles no cache em vez de substituir
+                // Isso permite que o cache seja usado quando navegar para editar uma role
+                patchState(store, upsertEntities(result.entries));
                 store.updatePaginationFromResponse(result);
                 store.finishOperation();
                 patchState(store, { lastUpdated: new Date() });

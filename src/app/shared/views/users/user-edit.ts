@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractContro
 import { UsersService } from '@core/services/api/identity-tenant/users.service';
 import { RolesService } from '@core/services/api/identity-tenant/roles.service';
 import { TenantStorageService } from '@core/services/storage/tenant-storage.service';
+import { UsersStore } from '@core/stores/identity-tenant/users/users.store';
 import { User, Role } from '@core/models/domain/identity-tenant';
 import { PagedResult } from '@core/models/common';
 import { FilterRolesRequest } from '@core/models/useCases/identity-tenant';
@@ -347,6 +348,7 @@ export class UserEdit implements OnInit, OnDestroy {
   private readonly usersService = inject(UsersService);
   private readonly rolesService = inject(RolesService);
   private readonly tenantStorage = inject(TenantStorageService);
+  private readonly usersStore = inject(UsersStore);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroy$ = new Subject<void>();
 
@@ -432,8 +434,66 @@ export class UserEdit implements OnInit, OnDestroy {
       return;
     }
 
+    // OTIMIZAÇÃO: Primeiro verifica se o usuário já está na store (cache)
+    const cachedUser = this.usersStore.entityMap()[this.userId];
+
+    if (cachedUser) {
+      // Usuário já está no cache - usa diretamente sem fazer chamada à API
+      console.log('[PERF] User loaded from store cache (no API call):', cachedUser.userName);
+      this.user = cachedUser;
+      this.selectedRoleIds = cachedUser.userRoles?.map(ur => ur.roleId) || [];
+      this.patchForm(cachedUser);
+      this.isLoading = false;
+      this.cdr.detectChanges();
+
+      // Carrega roles em background (não bloqueia a UI)
+      this.loadRolesInBackground(tenant.id);
+    } else {
+      // Usuário não está no cache - busca da API
+      console.log('[PERF] User not in cache, fetching from API');
+      this.loadUserFromApi(tenant.id);
+    }
+  }
+
+  /**
+   * Carrega roles em background (não bloqueia a UI)
+   */
+  private loadRolesInBackground(tenantId: string): void {
     const rolesRequest: FilterRolesRequest = {
-      tenantId: tenant.id,
+      tenantId,
+      isActive: true,
+      pageFilter: { pageNumber: 1, pageSize: 100 }
+    };
+
+    this.rolesService.getRolesByFilters(rolesRequest)
+      .pipe(
+        takeUntil(this.destroy$),
+        catchError(err => {
+          console.error('Error loading roles (non-blocking):', err);
+          return of({
+            entries: [],
+            pageNumber: 1,
+            pageSize: 100,
+            pageSizeLimit: 100,
+            totalPages: 0,
+            totalResults: 0
+          } as PagedResult<Role>);
+        })
+      )
+      .subscribe({
+        next: (roles) => {
+          this.availableRoles = roles.entries || [];
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  /**
+   * Carrega usuário da API (fallback quando não está no cache)
+   */
+  private loadUserFromApi(tenantId: string): void {
+    const rolesRequest: FilterRolesRequest = {
+      tenantId,
       isActive: true,
       pageFilter: { pageNumber: 1, pageSize: 100 }
     };
@@ -443,7 +503,6 @@ export class UserEdit implements OnInit, OnDestroy {
       roles: this.rolesService.getRolesByFilters(rolesRequest).pipe(
         catchError(err => {
           console.error('Error loading roles (non-blocking):', err);
-          // Return empty result so user can still be edited without roles
           return of({ entries: [], pageNumber: 1, pageSize: 100, pageSizeLimit: 100, totalPages: 0, totalResults: 0 } as PagedResult<Role>);
         })
       )
@@ -451,15 +510,10 @@ export class UserEdit implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: ({ user, roles }) => {
-          console.log('User loaded:', user);
-          console.log('User roles from API:', user.userRoles);
-          console.log('Roles from API:', roles);
+          console.log('[PERF] User loaded from API:', user.userName);
           this.user = user;
           this.availableRoles = roles.entries || [];
-          console.log('Available roles:', this.availableRoles);
-          // Initialize selected roles from user's assigned roles
           this.selectedRoleIds = user.userRoles?.map(ur => ur.roleId) || [];
-          console.log('Selected role IDs:', this.selectedRoleIds);
           this.patchForm(user);
           this.isLoading = false;
           this.cdr.detectChanges();
