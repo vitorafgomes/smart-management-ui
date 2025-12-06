@@ -37,9 +37,9 @@ import { Subject, takeUntil } from 'rxjs';
               </svg>
               All Users
             </h5>
-            <div class="d-flex gap-2">
-              <input type="text" class="form-control form-control-sm" placeholder="Search users..." style="width: 250px;">
-              <select class="form-select form-select-sm" style="width: 150px;">
+            <div class="d-flex gap-2 flex-wrap">
+              <input type="text" class="form-control form-control-sm" placeholder="Search users..." style="min-width: 150px; max-width: 250px; flex: 1;">
+              <select class="form-select form-select-sm" style="min-width: 120px; max-width: 150px;">
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -53,10 +53,10 @@ import { Subject, takeUntil } from 'rxjs';
                 <thead class="bg-light">
                   <tr>
                     <th class="ps-4">User</th>
-                    <th>Email</th>
+                    <th class="d-none d-md-table-cell">Email</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Last Login</th>
+                    <th class="d-none d-lg-table-cell">Last Login</th>
                     <th class="text-end pe-4">Actions</th>
                   </tr>
                 </thead>
@@ -99,7 +99,7 @@ import { Subject, takeUntil } from 'rxjs';
                             </div>
                           </div>
                         </td>
-                        <td>{{ user.email }}</td>
+                        <td class="d-none d-md-table-cell">{{ user.email }}</td>
                         <td>
                           @if (user.isAdmin) {
                             <span class="badge bg-danger-100 text-danger">Admin</span>
@@ -112,7 +112,7 @@ import { Subject, takeUntil } from 'rxjs';
                             {{ user.isActive ? 'Active' : 'Inactive' }}
                           </span>
                         </td>
-                        <td>{{ user.lastLoginAt | date:'short' }}</td>
+                        <td class="d-none d-lg-table-cell">{{ user.lastLoginAt | date:'short' }}</td>
                         <td class="text-end pe-4">
                           <button class="btn btn-sm btn-light" (click)="editUser(user.id)" title="Edit User">
                             <svg class="sa-icon">
@@ -129,16 +129,24 @@ import { Subject, takeUntil } from 'rxjs';
           </div>
           @if (users.length > 0) {
             <div class="card-footer d-flex justify-content-between align-items-center">
-              <small class="text-muted">Showing {{ users.length }} users</small>
-              <nav>
-                <ul class="pagination pagination-sm mb-0">
-                  <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-                  <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                  <li class="page-item"><a class="page-link" href="#">2</a></li>
-                  <li class="page-item"><a class="page-link" href="#">3</a></li>
-                  <li class="page-item"><a class="page-link" href="#">Next</a></li>
-                </ul>
-              </nav>
+              <small class="text-muted">Showing {{ users.length }} of {{ totalCount }} users</small>
+              @if (totalPages > 1) {
+                <nav>
+                  <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" [class.disabled]="currentPage === 1">
+                      <button class="page-link" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">Previous</button>
+                    </li>
+                    @for (page of getPageNumbers(); track page) {
+                      <li class="page-item" [class.active]="page === currentPage">
+                        <button class="page-link" (click)="goToPage(page)">{{ page }}</button>
+                      </li>
+                    }
+                    <li class="page-item" [class.disabled]="currentPage === totalPages">
+                      <button class="page-link" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">Next</button>
+                    </li>
+                  </ul>
+                </nav>
+              }
             </div>
           }
         </div>
@@ -158,6 +166,35 @@ import { Subject, takeUntil } from 'rxjs';
       justify-content: center;
       font-size: 0.875rem;
       font-weight: 600;
+    }
+
+    /* Mobile responsive fixes */
+    @media (max-width: 575.98px) {
+      .table-responsive {
+        overflow-x: hidden !important;
+      }
+      .table th,
+      .table td {
+        padding: 0.5rem 0.25rem !important;
+      }
+      .table th.ps-4,
+      .table td.ps-4 {
+        padding-left: 0.5rem !important;
+      }
+      .table th.pe-4,
+      .table td.pe-4 {
+        padding-right: 0.5rem !important;
+      }
+      .avatar-sm {
+        width: 28px;
+        height: 28px;
+      }
+      .avatar.me-3 {
+        margin-right: 0.5rem !important;
+      }
+      .fw-medium {
+        font-size: 0.875rem;
+      }
     }
   `
 })
@@ -216,6 +253,33 @@ export class UsersList implements OnInit, OnDestroy {
           this.isLoading = false;
         }
       });
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalCount / this.pageSize);
+  }
+
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
+      this.currentPage = page;
+      this.loadUsers();
+    }
   }
 
   getStatusClass(isActive: boolean): string {

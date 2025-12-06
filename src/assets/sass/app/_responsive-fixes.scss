@@ -1,0 +1,486 @@
+// =============================================================================
+// RESPONSIVE FIXES FOR SMART MANAGEMENT UI
+// =============================================================================
+// This file contains mobile-first responsive fixes to ensure proper rendering
+// on mobile devices, tablets, and small screens.
+
+// Breakpoints (matching Bootstrap)
+$breakpoint-xs: 0;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+
+// =============================================================================
+// CARD HEADER RESPONSIVE FIXES
+// =============================================================================
+
+// Card headers with flex items that need to wrap on mobile
+.card-header {
+  @media (max-width: #{$breakpoint-md - 0.02px}) {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+
+    .d-flex {
+      width: 100%;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    // Ensure filter inputs take full width on mobile
+    input.form-control,
+    select.form-select {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+  }
+}
+
+// =============================================================================
+// PAGE HEADER RESPONSIVE FIXES
+// =============================================================================
+
+// Page headers with title and action buttons
+.main-content > .container-fluid > .d-flex:first-child,
+.main-content > .container-xl > .d-flex:first-child {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+
+    // Action buttons take full width on mobile
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+// =============================================================================
+// TABLE RESPONSIVE FIXES
+// =============================================================================
+
+// Ensure table-responsive container works properly
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  // Add scrollbar hint on mobile
+  @media (max-width: #{$breakpoint-md - 0.02px}) {
+    &::after {
+      content: '';
+      display: block;
+      height: 0;
+    }
+  }
+}
+
+// Table styles for mobile
+.table {
+  @media (max-width: #{$breakpoint-md - 0.02px}) {
+    // Minimum width to prevent text wrapping too aggressively
+    min-width: 600px;
+
+    th, td {
+      white-space: nowrap;
+      padding: 0.75rem 0.5rem;
+
+      // Allow text truncation for long content
+      &:not(:first-child):not(:last-child) {
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    // User/avatar columns
+    .d-flex.align-items-center {
+      min-width: 160px;
+    }
+  }
+
+  // Extra small screens - remove min-width for compact tables
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    min-width: auto !important;
+    width: 100%;
+
+    th, td {
+      padding: 0.5rem 0.25rem !important;
+      white-space: normal;
+
+      &.ps-4 {
+        padding-left: 0.5rem !important;
+      }
+      &.pe-4 {
+        padding-right: 0.5rem !important;
+      }
+    }
+
+    // Compact user avatar column on XS
+    .d-flex.align-items-center {
+      min-width: auto;
+    }
+
+    .avatar-sm, .avatar.avatar-sm {
+      width: 28px !important;
+      height: 28px !important;
+    }
+
+    .me-3 {
+      margin-right: 0.5rem !important;
+    }
+
+    // Smaller text for usernames
+    .fw-medium {
+      font-size: 0.875rem;
+    }
+
+    small.text-muted {
+      font-size: 0.75rem;
+    }
+  }
+}
+
+// =============================================================================
+// CARD FOOTER / PAGINATION RESPONSIVE FIXES
+// =============================================================================
+
+.card-footer {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1rem;
+    text-align: center;
+
+    // Pagination should scroll horizontally if needed
+    nav {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+
+      .pagination {
+        justify-content: center;
+        flex-wrap: nowrap;
+      }
+    }
+  }
+}
+
+// Pagination small size on mobile
+.pagination {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    .page-link {
+      padding: 0.375rem 0.625rem;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// =============================================================================
+// NAVIGATION TABS RESPONSIVE FIXES
+// =============================================================================
+
+// Profile page and tenant settings navigation
+.profile-page-nav,
+.nav-tabs-clean {
+  @media (max-width: #{$breakpoint-md - 0.02px}) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+
+    .nav {
+      flex-wrap: nowrap;
+      min-width: max-content;
+    }
+
+    .nav-link {
+      padding: 0.75rem 1rem;
+      white-space: nowrap;
+    }
+
+    // Hide icons on small screens to save space
+    @media (max-width: #{$breakpoint-sm - 0.02px}) {
+      .sa-icon {
+        display: none;
+      }
+    }
+  }
+}
+
+// Generic nav tabs overflow scroll
+ul.nav-tabs,
+ul.nav-pills {
+  @media (max-width: #{$breakpoint-md - 0.02px}) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 5px;
+    margin-bottom: -5px;
+
+    &::-webkit-scrollbar {
+      height: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 3px;
+    }
+
+    li.nav-item {
+      flex-shrink: 0;
+    }
+  }
+}
+
+// =============================================================================
+// FORM LAYOUT RESPONSIVE FIXES
+// =============================================================================
+
+// Forms with inline elements
+.row {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    // Ensure form columns stack properly
+    > [class*="col-md-"],
+    > [class*="col-lg-"] {
+      margin-bottom: 1rem;
+    }
+  }
+}
+
+// Button groups at form bottom
+.d-flex.justify-content-end.gap-2 {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    flex-direction: column-reverse;
+    width: 100%;
+
+    .btn {
+      width: 100%;
+    }
+  }
+}
+
+// =============================================================================
+// SIDEBAR AND LAYOUT RESPONSIVE FIXES
+// =============================================================================
+
+// Main content area
+.main-content {
+  @media (max-width: #{$breakpoint-lg - 0.02px}) {
+    padding: 1rem !important;
+
+    .container-fluid,
+    .container-xl {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+  }
+}
+
+// Profile page header underlay
+.profile-page-header-underlay {
+  @media (max-width: #{$breakpoint-md - 0.02px}) {
+    height: 120px;
+  }
+}
+
+// Profile page header
+.profile-page-header {
+  @media (max-width: #{$breakpoint-md - 0.02px}) {
+    margin-top: -60px;
+  }
+}
+
+// =============================================================================
+// AVATAR AND USER INFO RESPONSIVE FIXES
+// =============================================================================
+
+.avatar {
+  flex-shrink: 0;
+
+  &-sm {
+    width: 36px;
+    height: 36px;
+  }
+
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    &-sm {
+      width: 32px;
+      height: 32px;
+    }
+  }
+}
+
+// =============================================================================
+// MODAL AND OVERLAY RESPONSIVE FIXES
+// =============================================================================
+
+.modal-dialog {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+}
+
+// =============================================================================
+// CARD LAYOUT RESPONSIVE FIXES
+// =============================================================================
+
+// Cards in columns
+.col-lg-4,
+.col-lg-8 {
+  @media (max-width: #{$breakpoint-lg - 0.02px}) {
+    // Ensure sidebar cards stack below main content
+    margin-bottom: 1rem;
+  }
+}
+
+// Card body with info lists
+.card-body ul.list-unstyled {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    li.d-flex {
+      flex-wrap: wrap;
+      gap: 0.25rem;
+
+      span:last-child {
+        word-break: break-all;
+      }
+    }
+  }
+}
+
+// =============================================================================
+// TYPOGRAPHY RESPONSIVE FIXES
+// =============================================================================
+
+.fs-xl {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    font-size: 1.25rem !important;
+  }
+}
+
+h1, .h1 {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    font-size: 1.5rem;
+  }
+}
+
+h5, .h5 {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    font-size: 1rem;
+  }
+}
+
+// =============================================================================
+// BADGE AND STATUS RESPONSIVE FIXES
+// =============================================================================
+
+.badge {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    font-size: 0.7rem;
+    padding: 0.25em 0.5em;
+  }
+}
+
+// =============================================================================
+// BUTTON RESPONSIVE FIXES
+// =============================================================================
+
+// Icon-only buttons should maintain size
+.btn-light,
+.btn-icon {
+  flex-shrink: 0;
+}
+
+// Button groups
+.gap-2 {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    gap: 0.5rem !important;
+  }
+}
+
+// =============================================================================
+// SEARCH AND FILTER CONTROLS RESPONSIVE FIXES
+// =============================================================================
+
+// Generic search/filter container
+.d-flex.gap-2:has(input.form-control, select.form-select) {
+  @media (max-width: #{$breakpoint-md - 0.02px}) {
+    flex-direction: column;
+    width: 100%;
+
+    input.form-control,
+    select.form-select {
+      width: 100% !important;
+    }
+  }
+}
+
+// =============================================================================
+// TEXT UTILITIES RESPONSIVE
+// =============================================================================
+
+// Ensure long text truncates properly
+.text-truncate-mobile {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// =============================================================================
+// TOUCH DEVICE OPTIMIZATIONS
+// =============================================================================
+
+@media (hover: none) and (pointer: coarse) {
+  // Increase touch targets
+  .btn-sm {
+    min-height: 38px;
+    min-width: 38px;
+  }
+
+  .form-control-sm,
+  .form-select-sm {
+    min-height: 38px;
+    padding: 0.5rem 0.75rem;
+  }
+
+  // Add touch feedback
+  .btn:active,
+  .nav-link:active {
+    opacity: 0.8;
+  }
+}
+
+// =============================================================================
+// SPINNER AND LOADING STATES
+// =============================================================================
+
+.spinner-border {
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+// =============================================================================
+// ICONS RESPONSIVE
+// =============================================================================
+
+.sa-icon {
+  flex-shrink: 0;
+
+  @media (max-width: #{$breakpoint-sm - 0.02px}) {
+    // Slightly smaller icons on mobile
+    &:not([style*="width"]) {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+}
