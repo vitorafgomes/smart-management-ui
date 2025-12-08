@@ -1,11 +1,10 @@
-import { Component, OnInit, inject, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, OnDestroy, ChangeDetectorRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { UsersService } from '@core/services/api/identity-tenant/users.service';
 import { TenantStorageService } from '@core/services/storage/tenant-storage.service';
 import { User } from '@core/models/domain/identity-tenant';
-import { FilterUsersRequest } from '@core/models/useCases/identity-tenant';
-import { Subject, takeUntil } from 'rxjs';
+import { UsersStore } from '@core/stores/identity-tenant/users/users.store';
+import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-users-list',
@@ -199,18 +198,46 @@ import { Subject, takeUntil } from 'rxjs';
   `
 })
 export class UsersList implements OnInit, OnDestroy {
-  private readonly usersService = inject(UsersService);
+  readonly usersStore = inject(UsersStore);
   private readonly tenantStorage = inject(TenantStorageService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
   private readonly destroy$ = new Subject<void>();
 
-  users: User[] = [];
-  isLoading = true;
-  totalCount = 0;
-  currentPage = 1;
-  pageSize = 10;
-  errorMessage = '';
+  // Lê dados diretamente da store (reativo via signals)
+  get users(): User[] {
+    return this.usersStore.entities();
+  }
+
+  get isLoading(): boolean {
+    return this.usersStore.isLoading();
+  }
+
+  get totalCount(): number {
+    return this.usersStore.totalResults();
+  }
+
+  get currentPage(): number {
+    return this.usersStore.currentFilter().pageNumber;
+  }
+
+  get pageSize(): number {
+    return this.usersStore.currentFilter().pageSize;
+  }
+
+  get errorMessage(): string {
+    return this.usersStore.error() ?? '';
+  }
+
+  constructor() {
+    // Effect para reagir a mudanças na store e atualizar a view
+    effect(() => {
+      // Força detecção de mudanças quando a store atualiza
+      const _ = this.usersStore.entities();
+      const __ = this.usersStore.isLoading();
+      this.cdr.markForCheck();
+    });
+  }
 
   ngOnInit(): void {
     this.loadUsers();
@@ -224,35 +251,18 @@ export class UsersList implements OnInit, OnDestroy {
   loadUsers(): void {
     const tenant = this.tenantStorage.getLastTenant();
     if (!tenant) {
-      this.errorMessage = 'No tenant selected. Please select a tenant first.';
-      this.isLoading = false;
+      console.error('No tenant selected');
       return;
     }
 
-    this.isLoading = true;
-    this.errorMessage = '';
+    console.log('[CACHE] Loading users via UsersStore (will populate cache)');
 
-    const usersRequest: FilterUsersRequest = {
+    // Usa a store para carregar - isso popula o cache!
+    this.usersStore.loadUsers({
       tenantId: tenant.id,
-      pageFilter: { pageNumber: this.currentPage, pageSize: this.pageSize }
-    };
-
-    this.usersService.getUsersByFilters(usersRequest)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response: any) => {
-          const result = response.users ?? response;
-          this.users = result.entries ?? [];
-          this.totalCount = result.totalResults ?? 0;
-          this.isLoading = false;
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.error('Error loading users:', err);
-          this.errorMessage = 'Failed to load users. Please try again.';
-          this.isLoading = false;
-        }
-      });
+      pageNumber: this.currentPage,
+      pageSize: this.pageSize
+    });
   }
 
   get totalPages(): number {
@@ -277,8 +287,15 @@ export class UsersList implements OnInit, OnDestroy {
 
   goToPage(page: number): void {
     if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
-      this.currentPage = page;
-      this.loadUsers();
+      const tenant = this.tenantStorage.getLastTenant();
+      if (!tenant) return;
+
+      // Usa a store para navegar entre páginas
+      this.usersStore.loadUsers({
+        tenantId: tenant.id,
+        pageNumber: page,
+        pageSize: this.pageSize
+      });
     }
   }
 
