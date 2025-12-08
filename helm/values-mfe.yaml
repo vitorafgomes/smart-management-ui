@@ -35,8 +35,9 @@ imagePullSecrets:
 nameOverride: ""
 fullnameOverride: ""
 
+# Note: app.kubernetes.io/name and app.kubernetes.io/instance are set by the chart
+# Do NOT override them here as they are used for selector matching
 podLabels:
-  app.kubernetes.io/name: smart-management
   app.kubernetes.io/role: mfe
   app.kubernetes.io/component: frontend
   app.kubernetes.io/part-of: smart-management-ui
@@ -53,6 +54,16 @@ resources:
   requests:
     cpu: 50m
     memory: 128Mi
+
+# Override securityContext from base values-mfe.yaml
+# Standard nginx:alpine requires root or specific directory permissions
+podSecurityContext: {}
+
+securityContext: {}
+  # Note: We're using standard nginx:alpine which runs as root
+  # For production, consider using nginx-unprivileged image with:
+  # runAsNonRoot: true
+  # runAsUser: 101
 
 # ConfigMap not needed for MFEs - they receive config from Shell
 configMap:

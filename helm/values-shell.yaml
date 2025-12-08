@@ -18,8 +18,9 @@ imagePullSecrets:
 nameOverride: "shell"
 fullnameOverride: "smart-management-shell"
 
+# Note: app.kubernetes.io/name and app.kubernetes.io/instance are set by the chart
+# Do NOT override them here as they are used for selector matching
 podLabels:
-  app.kubernetes.io/name: smart-management
   app.kubernetes.io/role: shell
   app.kubernetes.io/component: frontend
   app.kubernetes.io/part-of: smart-management-ui
@@ -50,6 +51,12 @@ resources:
   requests:
     cpu: 100m
     memory: 192Mi
+
+# Override securityContext from base values-shell.yaml
+# Standard nginx:alpine requires root or specific directory permissions
+podSecurityContext: {}
+
+securityContext: {}
 
 # ConfigMap with MFE URLs using Kubernetes internal DNS
 configMap:
