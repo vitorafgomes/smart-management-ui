@@ -271,6 +271,25 @@ import { Subject, takeUntil, forkJoin, of, catchError } from 'rxjs';
                       </span>
                     </li>
                   </ul>
+                  <hr class="my-3">
+                  <div class="d-grid">
+                    <button type="button" class="btn btn-outline-warning btn-sm"
+                            (click)="onResync()" [disabled]="isResyncing">
+                      @if (isResyncing) {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                      } @else {
+                        <svg class="sa-icon me-1" style="width: 14px; height: 14px;">
+                          <use href="/assets/icons/sprite.svg#refresh-cw"></use>
+                        </svg>
+                      }
+                      Resync Event
+                    </button>
+                    @if (resyncMessage) {
+                      <div class="mt-2 small" [class.text-success]="resyncSuccess" [class.text-danger]="!resyncSuccess">
+                        {{ resyncMessage }}
+                      </div>
+                    }
+                  </div>
                 </div>
               </div>
 
@@ -358,7 +377,10 @@ export class UserEdit implements OnInit, OnDestroy {
   selectedRoleIds: string[] = [];
   isLoading = true;
   isSaving = false;
+  isResyncing = false;
   errorMessage = '';
+  resyncMessage = '';
+  resyncSuccess = false;
   userId = '';
 
   // Password pattern: at least 1 uppercase, 1 lowercase, 1 number, 1 special char
@@ -556,6 +578,34 @@ export class UserEdit implements OnInit, OnDestroy {
 
   isRoleSelected(roleId: string): boolean {
     return this.selectedRoleIds.includes(roleId);
+  }
+
+  /**
+   * Resync user event - republish to RabbitMQ
+   */
+  onResync(): void {
+    if (!this.userId) return;
+
+    this.isResyncing = true;
+    this.resyncMessage = '';
+
+    this.usersService.resyncUser(this.userId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.isResyncing = false;
+          this.resyncSuccess = response.success;
+          this.resyncMessage = response.message;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error resyncing user:', err);
+          this.isResyncing = false;
+          this.resyncSuccess = false;
+          this.resyncMessage = err.error?.message || 'Failed to resync user event.';
+          this.cdr.detectChanges();
+        }
+      });
   }
 
   toggleRole(roleId: string, event: Event): void {

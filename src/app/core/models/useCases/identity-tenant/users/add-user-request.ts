@@ -14,6 +14,7 @@ export interface AddUserRequest {
   mobile?: string;
   avatarUrl?: string;
   roleId?: string;
+  groupIds?: string[];
   isAdmin: boolean;
   isActive: boolean;
   preferredLanguage?: string;

@@ -114,11 +114,10 @@ import { AddUserRequest } from '@core/models/useCases/identity-tenant';
                     </div>
                     <div class="col-md-6 mb-3">
                       <label class="form-label">Groups</label>
-                      <select class="form-select" formControlName="groups" multiple>
-                        <option value="sales">Sales Team</option>
-                        <option value="marketing">Marketing</option>
-                        <option value="engineering">Engineering</option>
-                        <option value="support">Support</option>
+                      <select class="form-select" formControlName="groupIds" multiple>
+                        @for (group of groups(); track group.id) {
+                          <option [value]="group.id">{{ group.name }}</option>
+                        }
                       </select>
                       <div class="form-text">Hold Ctrl/Cmd to select multiple.</div>
                     </div>
@@ -199,8 +198,9 @@ export class UserInvite implements OnInit {
   private readonly tenantStorage = inject(TenantStorageService);
   private readonly facade = inject(IdentityTenantFacade);
 
-  // Roles from Store
+  // Roles and Groups from Store
   readonly roles = this.facade.activeRoles;
+  readonly groups = this.facade.activeGroups;
 
   inviteForm: FormGroup;
   isSaving = false;
@@ -222,21 +222,32 @@ export class UserInvite implements OnInit {
       ]],
       confirmPassword: ['', Validators.required],
       roleId: ['', Validators.required],
-      groups: [[]],
+      groupIds: [[]],
       sendInvite: [true]
     }, { validators: this.passwordMatchValidator });
   }
 
   ngOnInit(): void {
-    // Load roles if not already loaded
     const tenant = this.tenantStorage.getLastTenant();
-    if (tenant && this.roles().length === 0) {
-      this.facade.loadRoles({
-        tenantId: tenant.id,
-        isActive: true,
-        pageNumber: 1,
-        pageSize: 100
-      });
+    if (tenant) {
+      // Load roles if not already loaded
+      if (this.roles().length === 0) {
+        this.facade.loadRoles({
+          tenantId: tenant.id,
+          isActive: true,
+          pageNumber: 1,
+          pageSize: 100
+        });
+      }
+      // Load groups if not already loaded
+      if (this.groups().length === 0) {
+        this.facade.loadGroups({
+          tenantId: tenant.id,
+          isActive: true,
+          pageNumber: 1,
+          pageSize: 100
+        });
+      }
     }
   }
 
@@ -285,6 +296,7 @@ export class UserInvite implements OnInit {
       firstName: formValue.firstName,
       lastName: formValue.lastName,
       roleId: formValue.roleId,
+      groupIds: formValue.groupIds?.length > 0 ? formValue.groupIds : undefined,
       isAdmin: isAdminRole ?? false,
       isActive: true
     };

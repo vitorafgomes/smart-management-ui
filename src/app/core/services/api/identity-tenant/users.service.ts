@@ -53,6 +53,14 @@ export class UsersService {
   }
 
   /**
+   * Resync user event (republish to RabbitMQ)
+   * Used to resync users that were not properly synced to MongoDB
+   */
+  resyncUser(id: string): Observable<{ userId: string; success: boolean; message: string }> {
+    return this.http.post<{ userId: string; success: boolean; message: string }>(`${this.apiUrl}/${id}/resync`, {});
+  }
+
+  /**
    * Get users with filters using FilterUsersRequest Use Case
    * Note: Users endpoint wraps PagedResult in "users" property
    */
