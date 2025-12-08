@@ -25,7 +25,7 @@ image:
   # --set image.repository=ghcr.io/vitorafgomes/smart-management-ui/mfe-tenant
   # --set image.repository=ghcr.io/vitorafgomes/smart-management-ui/mfe-users
   repository: nginx
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: "latest"
 
 imagePullSecrets:
