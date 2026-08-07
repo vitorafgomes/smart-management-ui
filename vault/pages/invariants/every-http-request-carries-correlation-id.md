@@ -1,22 +1,33 @@
 ---
 title: "Every HTTP request carries both correlation headers"
-version: "1.1"
-date: 2026-08-07
-changes: "Noted vacuous satisfaction during the mock first phase"
+version: "1.2"
+date: 2026-08-08
+changes: "Interceptor and pinning spec exist: real enforced_by and verified_by references from Phase 0"
 page_type: invariant
 status: active
 description: "Every outgoing request carries X-Session-Id and X-Correlation-Id, attached only by the shared-kernel interceptor."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
+enforced_by:
+  - "src/app/shared-kernel/correlation/correlation.interceptor.ts:13-24 - the single `HttpInterceptorFn` that sets both headers"
+  - "src/app/shared-kernel/correlation/correlation.interceptor.ts:6-7 - the header names, exported so specs cannot drift from the implementation"
+  - "src/app/shared-kernel/correlation/correlation.service.ts:11 - `sessionId`, one `crypto.randomUUID()` per application boot"
+  - "src/app/shared-kernel/correlation/correlation.service.ts:13-15 - `newCorrelationId()`, a fresh UUID per request"
+  - "src/app/app.config.ts:13 - registered once via `provideHttpClient(withInterceptors([correlationInterceptor]))`"
+verified_by:
+  - "src/app/shared-kernel/correlation/correlation.interceptor.spec.ts:31-40 - both headers present on an outgoing request"
+  - "src/app/shared-kernel/correlation/correlation.interceptor.spec.ts:42-57 - session id stable across two requests, correlation id different"
+  - "src/app/shared-kernel/correlation/correlation.interceptor.spec.ts:59-68 - headers present on a POST, not only on GET"
+  - ".github/workflows/ci.yml:28-29 - `ng test --no-watch` blocks every PR"
 ---
 
 # Every HTTP request carries both correlation headers
 
 > Every outgoing HTTP request carries `X-Session-Id` and a fresh `X-Correlation-Id`. Both are attached by the single `HttpInterceptorFn` in `shared-kernel/http/` - **no other code sets either header**.
 
-**Not enforced yet.** Accepted as part of [[pages/decisions/0001-modular-monolith-architecture]]; the interceptor lands with the first implementation PR. Design detail in [[pages/conventions/correlation-id]].
+**Enforced since Phase 0.** The interceptor, the session/correlation service and the pinning spec all exist and run in CI. Accepted as part of [[pages/decisions/0001-modular-monolith-architecture]]. Design detail in [[pages/conventions/correlation-id]].
 
 > **Vacuously satisfied during the mock-first phase.** Per [[pages/decisions/0002-mock-first-auth-and-data]], all data and auth are currently mocked, and mock adapters issue no HTTP - so there are no requests to carry headers and the invariant holds trivially. It is written now, and the interceptor and its pinning test are built now, so that the **first real HTTP call is covered on the day it appears** rather than being retrofitted afterwards. A rule that holds vacuously is still the rule; the trap would be treating "no HTTP yet" as "no need for this yet".
 
@@ -67,15 +78,18 @@ return firstValueFrom(this.http.get<UserDto[]>('/api/users'));
 
 A repository that mentions correlation at all has already gone wrong.
 
-## Enforcement (planned)
+## Enforcement
 
-- **One interceptor**, registered once via `provideHttpClient(withInterceptors([correlationInterceptor]))` in the shell's bootstrap providers.
-- **A pinning test** with `HttpTestingController`: both headers present on a request through the configured client; `X-Correlation-Id` differs between two requests; `X-Session-Id` is identical across them. This is the test that fails if the interceptor is dropped from the provider list.
-- **An E2E smoke assertion** (Playwright, per [[pages/conventions/testing]]) that every `/api/*` request observed during the smoke run carries both headers. The unit test proves the interceptor works; this proves it is actually installed in the running app - a distinction that matters, since a mis-registered provider passes the first and fails the second.
-- **A lint or review check** that `setHeaders` in `infrastructure/` never names either header, and that `provideHttpClient` appears exactly once in the codebase.
+- **One interceptor** (`src/app/shared-kernel/correlation/correlation.interceptor.ts:13-24`), registered once via `provideHttpClient(withInterceptors([correlationInterceptor]))` in the bootstrap providers (`src/app/app.config.ts:13`). The two header names are exported constants (`:6-7`) so the spec asserts against the same values the interceptor writes.
+- **A pinning test** with `HttpTestingController` (`src/app/shared-kernel/correlation/correlation.interceptor.spec.ts`): both headers present (`:31-40`), `X-Correlation-Id` different and `X-Session-Id` identical across two requests (`:42-57`), and both headers on a POST as well as a GET (`:59-68`). This is the test that fails if the interceptor is dropped from the provider list.
 - **`smart-pipeline` capability check.** Any change adding an HTTP call routes to [[pages/conventions/correlation-id]] first, where the "never hand-add" rule is stated.
 
-All of it lands with the first implementation PR that makes an HTTP call.
+The unit gate blocks every PR (`.github/workflows/ci.yml:28-29`).
+
+**Still planned, not built:**
+
+- **The E2E assertion** that every `/api/*` request observed during the smoke run carries both headers. The Phase 0 smoke suite only asserts that the app boots, because the app makes no API calls yet - there is nothing to observe. This matters and is not a formality: the unit test proves the interceptor *works*, and only the E2E proves it is actually *installed* in the running app. A mis-registered provider passes the first and fails the second. Add it with the first module that issues a real request.
+- **A lint or review check** that `setHeaders` in `infrastructure/` never names either header, and that `provideHttpClient` appears exactly once in the codebase. Neither is expressible in the current config; both are review findings today.
 
 ## Change protocol
 

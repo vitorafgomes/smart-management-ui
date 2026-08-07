@@ -1,22 +1,24 @@
 ---
 title: "Migration status"
-version: "1.0"
-date: 2026-08-07
-changes: "Initial module map with everything not started"
+version: "1.1"
+date: 2026-08-08
+changes: "Phase 0 landed: correlation row done, enforcement note added"
 page_type: roadmap
 status: active
 description: "Module map from the legacy micro frontends to target modules, with per area status and cross cutting porting work."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # Migration status
 
 The tracker for moving the legacy micro-frontend app into this repository's modular monolith. Source app: [[pages/migration/legacy-source-overview]]. Target shape: [[pages/decisions/0001-modular-monolith-architecture]].
 
-**Nothing is migrated. Every row below is `not started`, and that is accurate rather than pessimistic** - this repo holds the plain Angular 22 scaffold.
+**No module is migrated.** Every row in the module map is `not started`, and that is accurate rather than pessimistic - the app is still the plain Angular 22 scaffold visually.
+
+> **Phase 0 (enforcement foundation) landed on 2026-08-08.** It deliberately ports no feature: what it delivers is the tooling that makes the architecture self-enforcing before the first module is written - `angular-eslint` + `eslint-plugin-boundaries` with the layer and module rules proven to fire against deliberate violations, the `tsconfig` path mapping, the correlation interceptor and its pinning spec, a Playwright boot smoke test, and a GitHub Actions pipeline running lint, build, unit and E2E on every PR. The only cross-cutting row below that moves as a result is observability and correlation. See [[pages/roadmap/migration-plan]].
 
 ## How migration order gets decided
 
@@ -64,7 +66,7 @@ Shell-level concerns with no equivalent in this repo yet. These are not owned by
 
 | Concern | Legacy location | Target | Status |
 |---|---|---|---|
-| Observability and correlation | `shell/src/app/core/tracing/` (`otel-tracing.service.ts`, `trace-context.interceptor.ts`) | `shared-kernel/http/` per [[pages/conventions/correlation-id]] | not started |
+| Observability and correlation | `shell/src/app/core/tracing/` (`otel-tracing.service.ts`, `trace-context.interceptor.ts`) | `shared-kernel/correlation/` per [[pages/conventions/correlation-id]] | done (interceptor + spec) |
 | Auth: guards, interceptor, token refresh | `shell/src/app/core/auth/` | `shared-kernel/` - **mocked first**, see [[pages/decisions/0002-mock-first-auth-and-data]] | not started |
 | Multi-tenancy: tenant interceptor and storage | `shell/src/app/core/auth/tenant.interceptor.ts`, `tenant-storage.service.ts` | `shared-kernel/` | not started |
 | Global error handling | `shell/src/app/core/error/global-error-handler.ts` | `shared-kernel/errors/` | not started |

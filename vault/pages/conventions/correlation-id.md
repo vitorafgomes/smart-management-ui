@@ -1,22 +1,22 @@
 ---
 title: "Correlation id convention"
-version: "1.0"
-date: 2026-08-07
-changes: "Initial two level request identity convention"
+version: "1.1"
+date: 2026-08-08
+changes: "Built in Phase 0: real file paths, service instead of InjectionToken"
 page_type: convention
 status: active
 description: "Two level request identity: X-Session-Id per app boot and X-Correlation-Id per request, attached by one shared-kernel interceptor."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # Correlation id convention
 
 Every outgoing HTTP request carries two identifiers so that a user saying "it broke around 3pm" becomes a searchable query on the backend.
 
-**Status: target.** No interceptor exists in the repo yet.
+**Status: built** (Phase 0, 2026-08-08). Lives in `src/app/shared-kernel/correlation/`.
 
 ## The two levels
 
@@ -31,27 +31,32 @@ The session id is deliberately **not** the auth session or the user id. It is an
 
 ## One enforcement point
 
-Both headers are attached by a **single functional `HttpInterceptorFn`** living in `shared-kernel/http/`, registered once with `provideHttpClient(withInterceptors([...]))` in the shell's bootstrap providers.
+Both headers are attached by a **single functional `HttpInterceptorFn`** living in `shared-kernel/correlation/`, registered once with `provideHttpClient(withInterceptors([...]))` in the bootstrap providers (`src/app/app.config.ts:13`).
 
 ```ts
-export const correlationInterceptor: HttpInterceptorFn = (req, next) => {
-  const correlationId = crypto.randomUUID();
-  const sessionId = inject(SESSION_ID);
+// src/app/shared-kernel/correlation/correlation.interceptor.ts
+export const SESSION_ID_HEADER = 'X-Session-Id';
+export const CORRELATION_ID_HEADER = 'X-Correlation-Id';
+
+export const correlationInterceptor: HttpInterceptorFn = (request, next) => {
+  const correlation = inject(CorrelationService);
 
   return next(
-    req.clone({
+    request.clone({
       setHeaders: {
-        'X-Session-Id': sessionId,
-        'X-Correlation-Id': correlationId,
+        [SESSION_ID_HEADER]: correlation.sessionId,
+        [CORRELATION_ID_HEADER]: correlation.newCorrelationId(),
       },
     }),
   );
 };
 ```
 
+The header names are **exported constants**, not string literals repeated in the spec. A pinning test that hard-codes `'X-Session-Id'` while the interceptor writes something else passes for the wrong reason; sharing the constant makes that failure impossible.
+
 **Services never hand-add these headers.** Not "as well as", not "just for this one call". The moment a repository sets `X-Correlation-Id` itself, the guarantee stops being a guarantee and becomes a convention that holds in the places somebody remembered. One interceptor means the rule is true by construction, and the pinning test only has to check one thing. This is [[pages/invariants/every-http-request-carries-correlation-id]].
 
-The session id comes from an `InjectionToken` provided once at bootstrap rather than a module-level constant, so tests can supply a fixed value and assert on it.
+The session id comes from an injectable `CorrelationService` (`providedIn: 'root'`) rather than a module-level constant, so a test can override the provider and assert on a fixed value. An earlier draft of this page specified an `InjectionToken`; the service was chosen instead because it gives the two operations - a stable `sessionId` and a `newCorrelationId()` factory - one owner, where a token would have needed two.
 
 ## The same id reaches the logs
 
@@ -84,13 +89,18 @@ The header pair is a deliberate first step, not the end state. The path to distr
 
 The reason this is cheap is the single enforcement point. Every step above is a change to one file in `shared-kernel/` - **no module is touched**, because no module ever knew about the headers in the first place. That property is the actual value of the rule, more than the specific header names.
 
-## Enforcement (planned)
+## Enforcement
 
-- **One interceptor** in `shared-kernel/http/`, registered once in the shell's `provideHttpClient(withInterceptors([...]))`.
-- **A pinning test** using `HttpTestingController`: issue a request through the configured client, assert both headers are present, assert `X-Correlation-Id` differs between two requests while `X-Session-Id` matches. This is the test that fails if somebody unregisters the interceptor.
-- **A lint or review check** that `setHeaders` in `infrastructure/` never names either header - a hand-added header is the failure mode this convention exists to prevent.
-- **E2E smoke assertion** per [[pages/conventions/testing]]: every `/api/*` request observed during the smoke run carries both headers.
+Built and running in CI:
+
+- **One interceptor** in `shared-kernel/correlation/`, registered once in `provideHttpClient(withInterceptors([...]))`.
+- **A pinning test** using `HttpTestingController` (`correlation.interceptor.spec.ts`): both headers present, `X-Correlation-Id` differing between two requests while `X-Session-Id` matches, and the same on a POST. This is the test that fails if somebody unregisters the interceptor.
 - **`smart-pipeline` capability check:** any change adding an HTTP call routes here first.
+
+Still to build, when there is a real HTTP call to observe:
+
+- **E2E smoke assertion** per [[pages/conventions/testing]]: every `/api/*` request during the smoke run carries both headers. This is what proves the interceptor is *registered*, which the unit test cannot.
+- **A lint or review check** that `setHeaders` in `infrastructure/` never names either header - a hand-added header is the failure mode this convention exists to prevent, and it is currently caught by review only.
 
 ## Related
 

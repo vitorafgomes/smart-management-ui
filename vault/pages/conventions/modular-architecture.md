@@ -1,22 +1,22 @@
 ---
 title: "Modular architecture convention"
-version: "1.1"
-date: 2026-08-07
-changes: "Added extractability rationale for the boundary rules"
+version: "1.2"
+date: 2026-08-08
+changes: "Phase 0: enforcement is live, tsconfig wildcard shape, per-module chores removed"
 page_type: convention
 status: active
 description: "Folder layout, layer dependency rules, import examples, and the checklist for adding a bounded-context module."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # Modular architecture convention
 
 The mechanical companion to [[pages/decisions/0001-modular-monolith-architecture]]. That page says *why*; this one says *where files go and what may import what*.
 
-**Status: target, not current state.** The repository holds the plain Angular 22 scaffold; `src/app/modules/` does not exist yet. Follow this page when writing the first module - which will be a port from the legacy micro-frontend app, see [[pages/migration/migration-status]].
+**Status: enforced, but not yet inhabited.** `src/app/modules/` does not exist yet - the repository is still the plain Angular 22 scaffold. What *does* exist since Phase 0 is the tooling that enforces this page: the lint rules and the `tsconfig` mapping are already configured and were proven to reject deliberate violations, so the first module is governed from its first commit. Follow this page when writing it - it will be a port from the legacy micro-frontend app, see [[pages/migration/migration-status]].
 
 > **The rules here exist to keep modules extractable.** We consolidated nineteen micro-frontends into one app, and a module may need to be split back out one day. A module that only talks to the rest of the app through its `index.ts` can be lifted out by moving a folder; one that others reach into cannot. When a boundary rule feels like ceremony, the question to ask is not "is this import tidy" but "would this import still be here when someone tries to extract this module".
 
@@ -104,20 +104,22 @@ import { CorrelationInterceptor } from '@shared-kernel/http/correlation.intercep
 
 ## tsconfig paths
 
-`@modules/*` must map **only to each module's `index.ts`**, so a deep path fails to resolve at compile time rather than being caught later in review:
+`@modules/*` must map **only to each module's `index.ts`**, so a deep path fails to resolve at compile time rather than being caught later in review. The live shape (`tsconfig.json:16-19`):
 
 ```jsonc
 {
   "compilerOptions": {
     "paths": {
-      "@modules/administration": ["src/app/modules/administration/index.ts"],
-      "@shared-kernel/*": ["src/app/shared-kernel/*"]
+      "@modules/*": ["./src/app/modules/*/index.ts"],
+      "@shared-kernel/*": ["./src/app/shared-kernel/*"]
     }
   }
 }
 ```
 
-Note the shape: one explicit entry per module, not a wildcard `"@modules/*": ["src/app/modules/*"]`. A wildcard would happily resolve `@modules/administration/application/user-facade` and hand the boundary back to code review. Adding a module means adding a line here.
+The wildcard sits **before** `/index.ts`, and that placement is the whole point. `"@modules/*": ["src/app/modules/*"]` would happily resolve `@modules/administration/application/user-facade` and hand the boundary back to code review; this form resolves that same import to `src/app/modules/administration/application/user-facade/index.ts`, which does not exist, so it fails to compile. It buys the same guarantee as one explicit entry per module without a line of maintenance per module.
+
+Compile failure is not the only guard, because a `tsconfig` that fails to resolve produces a confusing error rather than an instructive one. `eslint.config.js:163-174` rejects the same import with a message naming the rule.
 
 ## Checklist: adding a new module
 
@@ -128,16 +130,21 @@ Note the shape: one explicit entry per module, not a wildcard `"@modules/*": ["s
 5. Write `infrastructure/` adapters implementing the ports. Typed responses; failures handled at this boundary per root Rule G. No hand-added correlation headers - the interceptor owns those, see [[pages/conventions/correlation-id]].
 6. Write `ui/` as standalone `OnPush` components plus the module's lazy route table, following [[pages/conventions/angular-best-practices]].
 7. Write `index.ts` exporting **only** what the outside genuinely needs: public types, the route provider, the DI providers. If a symbol is exported "just in case", delete it.
-8. Add the module's `paths` entry in `tsconfig.json` (exact path to `index.ts`).
+8. Nothing to add in `tsconfig.json` - the `@modules/*` mapping already covers a new folder.
 9. Lazy-load it from `shell/app.routes.ts`.
-10. Register the module's element types in the eslint boundaries config once that config exists.
+10. Nothing to add in `eslint.config.js` either - the element patterns are `modules/*/<layer>`, so a new module is governed as soon as its folders exist. Both of these were per-module chores in earlier drafts of this page; Phase 0 removed them deliberately, because a boundary that needs registering is a boundary somebody eventually forgets to register.
 11. Specs per [[pages/conventions/testing]]: domain functions, facade state transitions, component behaviour with logic.
 
-## Enforcement (planned)
+## Enforcement
 
-- **`eslint-plugin-boundaries`** with one element type per layer and an explicit allow-list, making the dependency table above executable. Lands with the first implementation PR.
-- **tsconfig `paths`** shaped as above, so deep cross-module imports fail to compile.
+Live since Phase 0 (2026-08-08):
+
+- **`eslint-plugin-boundaries`** with one element type per layer (`eslint.config.js:15-31`) and an explicit allow-list per type (`eslint.config.js:40-118`), making the dependency table above executable. `default: 'disallow'` means an unlisted combination is rejected, not permitted.
+- **A regex ban on deep alias imports** (`eslint.config.js:163-174`), because an unresolvable alias looks like an external package to the boundaries graph and would otherwise pass.
+- **tsconfig `paths`** shaped as above, so deep cross-module imports also fail to compile.
 - **`smart-reviewer`** for what lint cannot judge: whether a new folder is really a bounded context, and whether `index.ts` is exporting more than it should.
+
+`npm run lint` is a mandatory gate and runs on every PR (`.github/workflows/ci.yml:22-23`).
 
 ## Related
 

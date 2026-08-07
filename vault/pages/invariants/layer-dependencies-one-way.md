@@ -1,22 +1,32 @@
 ---
 title: "Layer dependencies point one way"
-version: "1.0"
-date: 2026-08-07
-changes: "Initial invariant for one way layer dependencies"
+version: "1.1"
+date: 2026-08-08
+changes: "Enforcement is live: real enforced_by and verified_by references from Phase 0"
 page_type: invariant
 status: active
 description: "Inside a module dependencies run ui to application to domain, and infrastructure implements domain ports."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
+enforced_by:
+  - "eslint.config.js:15-31 - `domain`, `application`, `infrastructure`, `ui` declared as element types"
+  - "eslint.config.js:53-56 - domain may import only its own module's domain"
+  - "eslint.config.js:59-68 - application may import domain, never ui or infrastructure"
+  - "eslint.config.js:72-81 - infrastructure may import domain, never ui or application"
+  - "eslint.config.js:85-94 - ui may import application and domain, never infrastructure"
+  - "eslint.config.js:176-184 - `boundaries/dependencies` with `default: 'disallow'`"
+verified_by:
+  - ".github/workflows/ci.yml:22-23 - `npm run lint` blocks every PR"
+  - "Phase 0 negative proof: scratch `module-a/application` importing `module-a/ui` failed with `application is not allowed to import ui`; scratch `module-a/ui` importing `module-b/infrastructure` failed with `ui is not allowed to import infrastructure`"
 ---
 
 # Layer dependencies point one way
 
 > Inside a module, dependencies run **ui to application to domain** and never backwards. `infrastructure` depends on `domain` by implementing its ports, and nothing depends on `infrastructure` except the DI binding that provides it.
 
-**Not enforced yet.** Accepted as part of [[pages/decisions/0001-modular-monolith-architecture]]; takes effect with the first module.
+**Enforced since Phase 0.** No module exists yet, so the rule holds vacuously - but every edge in the table below is already a lint error, proven against deliberate violations. Accepted as part of [[pages/decisions/0001-modular-monolith-architecture]].
 
 ## The shape
 
@@ -82,14 +92,15 @@ The last block is the point of the whole arrangement: exactly one file names bot
 
 The first violation - a shared type declared in a component file - is fixed by moving the type to `domain/`, where it probably belonged. The fourth, an adapter calling a facade, is usually a sign that an operation is being orchestrated in the wrong layer: orchestration is what `application/` is for.
 
-## Enforcement (planned)
+## Enforcement
 
-- **`eslint-plugin-boundaries`** with `ui`, `application`, `infrastructure` and `domain` as element types and an explicit allow-list per type, mirroring the table in [[pages/conventions/modular-architecture]]. Every edge above is a lint failure.
-- **`import/no-cycle`** as a backstop for cycles that individual edge rules miss.
+- **`eslint-plugin-boundaries`** with `ui`, `application`, `infrastructure` and `domain` as element types (`eslint.config.js:15-31`) and an explicit allow-list per type (`eslint.config.js:53-94`), mirroring the table in [[pages/conventions/modular-architecture]]. Every edge in the "what violating it looks like" section above is a lint failure, and `default: 'disallow'` (`eslint.config.js:179`) means a layer combination nobody thought to list is rejected rather than allowed.
 - **Facade specs that provide a fake port.** A spec that cannot construct its facade without HTTP has found a violation the lint config may not yet cover.
 - **`smart-reviewer`** for the judgement calls: whether logic sitting in a facade belongs in `domain/`, and whether a new port is a port or a leaked transport detail.
 
-Lands with the first implementation PR.
+The lint gate blocks every PR (`.github/workflows/ci.yml:22-23`).
+
+**Not covered:** `import/no-cycle` is not configured. Cycles that do not cross a layer boundary - two files inside one `application/` folder importing each other - are currently a review concern only.
 
 ## Change protocol
 

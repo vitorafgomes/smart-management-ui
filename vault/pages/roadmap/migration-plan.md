@@ -28,9 +28,11 @@ The pattern exists only on paper until the tooling makes it self-enforcing. Smal
 - Playwright harness (`npm run e2e`) with the boot smoke test only.
 - GitHub Actions CI: lint + build + unit + e2e on every PR.
 
-Partial work for this phase exists in git stash `parked: modular-architecture code` on `feat/modular-architecture` - evaluate reuse before rewriting.
+Partial work for this phase existed in git stash `parked: modular-architecture code` on `feat/modular-architecture`; its eslint config and correlation implementation were reused (re-implemented on the Phase 0 branch, not stash-applied), its module scaffolding was not.
 
 **Exit criteria:** all four gates runnable and green in CI; boundary lint proven to fire; invariant pages updated with real `enforced_by`/`verified_by` references.
+
+**Status: done, 2026-08-08.** All four gates green; the negative proof caught two rules that were silently not firing (domain purity expressed as a boundaries policy, and deep alias imports classified as external packages) - both are now closed by `no-restricted-imports`. The app is unchanged visually, as intended.
 
 ## Phase 1 - Shell and theming
 

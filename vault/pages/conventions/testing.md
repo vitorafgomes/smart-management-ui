@@ -1,22 +1,22 @@
 ---
 title: "Testing convention"
-version: "1.0"
-date: 2026-08-07
-changes: "Initial unit and E2E testing convention"
+version: "1.1"
+date: 2026-08-08
+changes: "Phase 0: Playwright installed, lint added to the gate list, CI is real"
 page_type: convention
 status: active
 description: "What must have a Vitest spec, how specs are written per layer, and the planned Playwright smoke suite."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # Testing convention
 
 Two levels: Vitest unit specs gating **every edit**, and a Playwright smoke suite gating **every PR**.
 
-**Status:** Vitest runs today through the `@angular/build:unit-test` builder (`ng test --no-watch`). Playwright is **not installed**; that section is the target.
+**Status:** both levels run today. Vitest through the `@angular/build:unit-test` builder (`ng test --no-watch`); Playwright installed in Phase 0 (`npm run e2e`), with the boot smoke test only - the other three smoke specs below need routes and API calls that do not exist yet.
 
 ## Unit tests (Vitest + jsdom)
 
@@ -72,23 +72,24 @@ Per root Rule G and the `production-readiness-checks` skill: every boundary gets
 ng test --no-watch        fully green, no filtering
 npx prettier --check <touched files>
 ng build                  zero errors AND zero warnings
+npm run lint              clean
 ```
 
 No `.only`, no filtered runs to make a gate pass. Bundle-budget warnings count as failures. Gate runs dispatch to `smart-mechanic`.
 
-## E2E tests (Playwright, planned)
+## E2E tests (Playwright)
 
-Not installed. Everything below is the target shape, landing with the first implementation PR that has a route worth loading.
+Installed in Phase 0. **One of the four specs below exists**; the rest are the target shape and land as the app grows the surfaces they assert on.
 
 ### Setup
 
-Playwright's `webServer` config starts `ng serve` and waits for it, so a run needs no manual server. Chromium is enough for the gate; more browsers are a nightly concern, not a per-PR one.
+`playwright.config.ts` uses `webServer` to start `ng serve` on port 4200 and wait for it, so a run needs no manual server. `reuseExistingServer` is on locally and off in CI. Specs live in `e2e/`. Chromium is enough for the gate; more browsers are a nightly concern, not a per-PR one.
 
 ### The smoke suite
 
 Deliberately small - four assertions that catch the failures unit tests structurally cannot:
 
-1. **The app boots and redirects.** Load `/`, land on the real default route with rendered content. Catches broken bootstrap, provider errors and route misconfiguration.
+1. **The app boots and redirects.** Load `/`, land on the real default route with rendered content. Catches broken bootstrap, provider errors and route misconfiguration. **Built** (`e2e/smoke.spec.ts`); it currently asserts the scaffold renders, and tightens to the real default route in Phase 1.
 2. **SPA deep-link works.** Load a nested route directly, as a bookmark or refresh would. This is the classic production-only failure: fine when navigated to in-app, 404 when the server is asked for the path. Only a real server catches it.
 3. **Every `/api/*` request carries both correlation headers.** Intercept network traffic during a normal flow and assert `X-Session-Id` and `X-Correlation-Id` on every API call, with the correlation id differing per request. This is the end-to-end proof for [[pages/invariants/every-http-request-carries-correlation-id]] - the unit test proves the interceptor works, this proves it is actually installed in the running app.
 4. **An API 500 produces a user-visible error state.** Route-intercept an endpoint to return 500 and assert the user sees an error - not a blank panel, not a spinner forever. Root Rule G, verified rather than asserted in review.
@@ -102,15 +103,16 @@ The suite stays this size on purpose. A smoke suite that grows into a regression
 | Unit | Every edit | `ng test --no-watch` | The next edit |
 | Build | Every edit | `ng build` (zero warnings) | The next edit |
 | Format | Every edit | `npx prettier --check` | The next edit |
-| E2E smoke | Every PR | `npx playwright test` | The merge |
+| Lint | Every edit | `npm run lint` | The next edit |
+| E2E smoke | Every PR | `npm run e2e` | The merge |
 
 E2E is per-PR rather than per-edit because it needs a built and served app; running it on every keystroke-level change would make the inner loop unusable, and the unit gate already covers what changes at that granularity.
 
-## Enforcement (planned)
+## Enforcement
 
-- **Per-edit gate** as above, dispatched to `smart-mechanic` by the `smart-pipeline` skill. Already in force for unit, build and format.
-- **Playwright `webServer`** config plus the four smoke specs, added with the first implementation PR.
-- **CI** runs unit plus E2E on the PR; neither is skippable.
+- **Per-edit gate** as above, dispatched to `smart-mechanic` by the `smart-pipeline` skill. In force for unit, build, format and lint.
+- **Playwright `webServer`** config plus the boot smoke spec. The remaining three smoke specs land as the surfaces they assert on appear.
+- **CI** (`.github/workflows/ci.yml`) runs lint, build, unit and E2E on every pull request and on push to `main`. None of them is skippable.
 - **`smart-reviewer`** checks that new boundaries actually have a failure-path spec and that facade specs mock the port rather than the transport.
 
 ## Related

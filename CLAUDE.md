@@ -24,7 +24,9 @@ This repo has an LLM wiki at [`./vault/`](./vault/). **Before any code search, r
 - **Framework:** Angular 22.1, standalone application (no NgModules), SCSS, **no SSR**.
 - **Tests:** Vitest + jsdom, run through the `@angular/build:unit-test` builder. Single run: `ng test --no-watch`.
 - **Formatting:** Prettier (`.prettierrc` at the repo root). Check touched files with `npx prettier --check <files>`.
-- **Linting:** no ESLint installed yet. Treat lint as a gate only once it is configured.
+- **Linting:** `angular-eslint` + `eslint-plugin-boundaries` (flat config in `eslint.config.js`). **`npm run lint` is a mandatory gate** alongside build and test — it enforces the Rule H boundaries mechanically, not just by review.
+- **E2E:** Playwright, `npm run e2e` (chromium, `webServer` starts `ng serve`). Per PR, not per edit.
+- **CI:** `.github/workflows/ci.yml` runs lint, build, unit and E2E on every PR and on push to `main`.
 - **Package manager:** npm (`packageManager: npm@11.17.0`).
 - **Entry points:** `src/main.ts` (bootstrap), `src/app/app.routes.ts` (routing), `src/styles.scss` (global styles).
 - **Build:** `ng build` (defaults to the production configuration, which enforces bundle budgets).
@@ -88,7 +90,7 @@ Two rules, both non-negotiable:
 
 Two more invariants follow from the same decision: state is signals-first ([[vault/pages/invariants/state-is-signals-first]], expanding Rule A) and every HTTP request carries both correlation headers via the single shared-kernel interceptor ([[vault/pages/invariants/every-http-request-carries-correlation-id]]) — services never hand-add those headers.
 
-**None of this is implemented or enforced yet.** The repo is still the Angular 22 scaffold. `angular-eslint` + `eslint-plugin-boundaries`, the `tsconfig` path mapping, the interceptor and its pinning test all land **with the first implementation PR**. Until then the boundary rests on this rule and on review — which means the first module written sets the precedent every later one copies.
+**Enforced since Phase 0.** `angular-eslint` + `eslint-plugin-boundaries`, the `tsconfig` path mapping, and the correlation interceptor with its pinning spec are all in place and run in CI. `src/app/modules/` is still empty, so the boundary rules currently hold vacuously — but they were proven to fire against deliberate violations before landing, so the first module is governed from its first commit rather than setting a precedent nobody checked. The one invariant that stays review-only is signals-first state ([[vault/pages/invariants/state-is-signals-first]]): every version of that violation depends on what the state means, not on which file imports which.
 
 ## Model routing
 
