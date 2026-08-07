@@ -1,0 +1,11 @@
+{
+  "name": "smart-management-ui",
+  "compatibility_date": "2026-08-07",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./dist/smart-management-ui/browser",
+    "not_found_handling": "single-page-application"
+  }
+}
