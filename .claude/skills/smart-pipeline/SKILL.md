@@ -30,9 +30,12 @@ Read exactly one from this directory: `feature.md` | `bugfix.md` | `refactor.md`
    |---|---|---|
    | adds or changes a **route** | [[vault/pages/conventions/routing]] | a new route that skips the established guard; a feature added eagerly when every sibling is lazy-loaded; a guard that redirects but leaves stale state behind |
    | adds a **form** | [[vault/pages/conventions/forms]] + root Rule G | validation that exists on the client only; a submit path with no error surface; a disabled-button "guard" that is not backed by real validation |
-   | adds an **HTTP call** | [[vault/pages/conventions/http-services]] + root Rule G | `HttpClient` injected straight into a component; an untyped response; a failure that reaches only the console and never the user |
+   | adds an **HTTP call** | [[vault/pages/conventions/correlation-id]] + root Rule G | `HttpClient` injected straight into a component; an untyped response; a failure that reaches only the console and never the user; hand-adding `X-Correlation-Id` / `X-Session-Id` — **never do this**, the shared-kernel interceptor owns both headers; bypassing `HttpClient` with `fetch`, so the interceptor never runs |
    | adds or changes **shared state** | root Rule A | the same server data fetched and held by two components; a second async idiom introduced alongside the established one; state that outlives the route that owns it |
    | adds a **user-facing surface** | [[vault/pages/conventions/ui-ux]] | shipping markup before running `ui-ux-pro-max`; no keyboard path; loading and error states that were never designed |
+   | adds a **new module** | [[vault/pages/decisions/0001-modular-monolith-architecture]] + [[vault/pages/conventions/modular-architecture]] | a screen mistaken for a bounded context; layers skipped "just for this one"; an `index.ts` that re-exports everything, which is a deep import with a shorter path |
+   | adds a **cross-module import** | [[vault/pages/invariants/module-boundaries]] | reaching into another module's internals through the alias, which looks legitimate and is not; a dependency that should have gone through `shell/` or `shared-kernel/` |
+   | adds **state** | [[vault/pages/conventions/signals-state]] | a public writable signal; a derived value kept in sync by hand instead of `computed()`; a new `BehaviorSubject`, which introduces a second state idiom alongside signals |
 
    Reading the feature page is not a substitute for reading the convention that governs the capability.
 2. **Rule B per edit** - edit -> test -> validate structure/architecture (root CLAUDE.md).
@@ -47,4 +50,4 @@ Read exactly one from this directory: `feature.md` | `bugfix.md` | `refactor.md`
 
 - A skill whose surface the diff doesn't touch does not run. A 10-line component fix runs zero audits.
 - Don't re-run gates on an unchanged diff; reuse session findings.
-- **Model routing**: mechanical stages (`ng build`, `ng test --no-watch`, `prettier --check`) -> dispatch `smart-mechanic` (haiku, low effort); Explore surveys -> `model: haiku`; diff-gated audits -> a sonnet subagent (medium) unless the skill body is already loaded and the diff is tiny; `smart-reviewer` is pinned opus/high. The mechanic never fixes; failures come back verbatim; expected output under ~50 lines runs inline instead.
+- **Model routing**: the policy table lives in the root `CLAUDE.md` **Model routing** section - follow it, don't restate it here. Pipeline-specific notes: the mechanic never fixes (failures come back verbatim), and a stage whose expected output is under ~50 lines runs inline instead of dispatching.

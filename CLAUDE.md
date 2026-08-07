@@ -18,6 +18,9 @@ This repo has an LLM wiki at [`./vault/`](./vault/). **Before any code search, r
 ## Project snapshot
 
 - **What:** `smart-management-ui` — the back-office/admin frontend for the Smart Management ecosystem.
+- **Migration target.** This repo replaces the production Angular 21 micro-frontend app at `/home/vitorafgomes/WorkSpace/Dev/Smart.Management/smart-management-ui` (**read-only — inspect, never modify**). Nothing is migrated yet: [[vault/pages/migration/migration-status]], [[vault/pages/migration/legacy-source-overview]].
+- **Data & auth are MOCKED** this phase — no backend, no identity provider. [[vault/pages/decisions/0002-mock-first-auth-and-data]]
+- **Deploy:** Cloudflare Workers static assets only (Workers Builds on push to `main`, config in `wrangler.jsonc`). No Docker, no Helm. [[vault/pages/conventions/deployment]]
 - **Framework:** Angular 22.1, standalone application (no NgModules), SCSS, **no SSR**.
 - **Tests:** Vitest + jsdom, run through the `@angular/build:unit-test` builder. Single run: `ng test --no-watch`.
 - **Formatting:** Prettier (`.prettierrc` at the repo root). Check touched files with `npx prettier --check <files>`.
@@ -45,7 +48,7 @@ Every code edit must run through this cycle before moving on to the next edit:
 
 1. **Edit.** Make the change.
 2. **Test.** If the change is testable (pure function, service method, component behavior, guard, validator, pipe), add or update a Vitest spec for the scenario. If it's wiring with nothing meaningful to assert, say so explicitly — don't silently skip.
-3. **Validate structure.** Standalone components only; `input()` / `output()` functions over `@Input()` / `@Output()` decorators; `inject()` over constructor injection where the codebase already does so; no `any` without a written justification; OnPush / zoneless-compatible patterns (no reliance on implicit change detection).
+3. **Validate structure.** Standalone components only; `input()` / `output()` functions over `@Input()` / `@Output()` decorators; `inject()` over constructor injection where the codebase already does so; no `any` without a written justification; OnPush / zoneless-compatible patterns (no reliance on implicit change detection). **The full checklist is [[vault/pages/conventions/angular-best-practices]]** — native control flow, `@defer`, `host` metadata, typed forms, `NgOptimizedImage`, naming, and template accessibility. Use it, don't work from memory.
 4. **Validate architecture.** Does the edit respect the rules in this file and the vault pages it touches?
 5. **Gates.** `ng build` completes with **zero errors AND zero warnings** — budget warnings count; fix them or consciously adjust the budget in `angular.json` and say why. `ng test --no-watch` fully green, no test filtering. `npx prettier --check` clean on every touched file.
 
@@ -73,6 +76,37 @@ Every HTTP call returns a **typed** result, and its failure path is handled at t
 - A failure logged only to the console is not handled. The user must be able to tell the difference between "no data" and "the request failed".
 - **No empty `catch {}` blocks**, and no `catch` that discards the error without either surfacing it or rethrowing.
 - Loading, success, and error are all real states. A surface that can fail must be able to render its failure.
+
+### Rule H — Module boundaries
+
+The app is a **modular monolith**: `src/app/shell/` (composition), `src/app/shared-kernel/` (cross-cutting), and `src/app/modules/<context>/` bounded contexts layered `domain/` (pure TS) → `application/` (signals facades) → `infrastructure/` (adapters) → `ui/`. The decision and its rationale: [[vault/pages/decisions/0001-modular-monolith-architecture]]; the folder tree, import examples, and the "adding a module" checklist: [[vault/pages/conventions/modular-architecture]].
+
+Two rules, both non-negotiable:
+
+- **A module is reached only through its public API.** Import `@modules/<context>`, which resolves to that module's `index.ts` — never a path into another module's internals, aliased or relative. [[vault/pages/invariants/module-boundaries]]
+- **Layer dependencies point one way.** `ui` → `application` → `domain`, never backwards; `infrastructure` implements the ports `domain` declares and nothing depends on it except the DI binding; `domain/` imports no Angular, no RxJS, no HTTP. [[vault/pages/invariants/layer-dependencies-one-way]], [[vault/pages/invariants/domain-layer-purity]]
+
+Two more invariants follow from the same decision: state is signals-first ([[vault/pages/invariants/state-is-signals-first]], expanding Rule A) and every HTTP request carries both correlation headers via the single shared-kernel interceptor ([[vault/pages/invariants/every-http-request-carries-correlation-id]]) — services never hand-add those headers.
+
+**None of this is implemented or enforced yet.** The repo is still the Angular 22 scaffold. `angular-eslint` + `eslint-plugin-boundaries`, the `tsconfig` path mapping, the interceptor and its pinning test all land **with the first implementation PR**. Until then the boundary rests on this rule and on review — which means the first module written sets the precedent every later one copies.
+
+## Model routing
+
+Which model does what. Applies to me and to every subagent I spawn.
+
+| Work | Model |
+|---|---|
+| Planning, architecture, design decisions, final validation | **Main thread** (top model). Never writes code directly on a non-trivial task. |
+| Non-trivial implementation — features, refactors, diagnosed bugfixes | **Opus** subagent |
+| Review gate (`smart-reviewer`) | **Opus**, effort high |
+| Mechanical edits — renames, boilerplate, applying a ready plan | **Sonnet** |
+| Commits, push, PR mechanics | **Sonnet** |
+| Build / test / lint runs (`smart-mechanic`) | **Haiku**, effort low |
+| Codebase surveys (`Explore`) | **Haiku** |
+| Test writing from a defined spec | **Sonnet** |
+| Vault and docs writing | **Sonnet**, reviewed by the main thread |
+
+The main thread plans and validates; it does not implement. A stage that can be pinned to a cheaper model is pinned — see the `smart-pipeline` skill's Token rules.
 
 ## When working here
 
