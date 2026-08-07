@@ -65,7 +65,7 @@ Pages arrive as the project grows.
 
 ## Roadmap
 
-Pages arrive as the project grows.
+- [[pages/roadmap/migration-plan|Migration plan]] - the phased sequence (foundation, shell, identity first, module waves) with per-phase exit criteria and user decision checkpoints.
 
 ## Decisions (ADRs)
 
