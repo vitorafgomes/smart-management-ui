@@ -1,22 +1,31 @@
 ---
 title: "A module is imported only through its public API"
-version: "1.1"
-date: 2026-08-07
-changes: "Tied the boundary rule to future module extraction"
+version: "1.2"
+date: 2026-08-08
+changes: "Enforcement is live: real enforced_by and verified_by references from Phase 0"
 page_type: invariant
 status: active
 description: "Cross module imports resolve to the module index.ts and never to a file inside another module."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
+enforced_by:
+  - "eslint.config.js:28 - `module-public-api` element type, matching `modules/*`"
+  - "eslint.config.js:163-174 - deep alias imports (`@modules/<context>/<anything>`) rejected by regex"
+  - "eslint.config.js:176-184 - `boundaries/dependencies` with `default: 'disallow'`"
+  - "eslint.config.js:65, 78, 91, 116 - the only allowed cross-module target is `module-public-api`"
+  - "tsconfig.json:17 - `@modules/*` resolves only to a module `index.ts`"
+verified_by:
+  - ".github/workflows/ci.yml:22-23 - `npm run lint` blocks every PR"
+  - "Phase 0 negative proof: scratch `module-a/ui` importing `module-b/infrastructure` failed with `boundaries/dependencies`; the same import via `@modules/module-b` passed"
 ---
 
 # A module is imported only through its public API
 
 > No file may import from inside another module. Every cross-module import resolves to that module's `index.ts`, via its `@modules/<context>` alias.
 
-**Not enforced yet.** `src/app/modules/` does not exist; this invariant is accepted as part of [[pages/decisions/0001-modular-monolith-architecture]] and takes effect with the first module.
+**Enforced since Phase 0.** `src/app/modules/` does not exist yet, so the rule currently holds vacuously - but the lint config and the `tsconfig` mapping are already in place and were proven to fire against deliberate violations, so the first module is covered on the day it is written rather than afterwards. Accepted as part of [[pages/decisions/0001-modular-monolith-architecture]].
 
 ## Why this is load-bearing
 
@@ -55,14 +64,15 @@ The third case is the one that slips through review. An `index.ts` that re-expor
 
 The usual pressure that produces a violation: a screen in module B needs a value module A already computed. The wrong fix is to import A's facade. The right fixes are to expose the value through A's `index.ts`, to move the shared concept into `shared-kernel/`, or to compose the two in `shell/`. If the two modules truly need to react to each other's events, that is the deferred event bus in ADR 0001 - and the signal that it is time to write that ADR.
 
-## Enforcement (planned)
+## Enforcement
 
-- **`eslint-plugin-boundaries`.** Each module is a declared element type; the `no-private` and element-type rules reject any import that resolves to a path inside another module rather than to its entry point. This is the Angular equivalent of the NetArchTest suite in the reference solution.
-- **tsconfig `paths`.** `@modules/<context>` maps explicitly to that module's `index.ts`, with **no wildcard entry**, so a deep alias path does not resolve at all. Shape shown in [[pages/conventions/modular-architecture]].
+- **`eslint-plugin-boundaries`** (`eslint.config.js:176-184`). `boundaries/dependencies` runs with `default: 'disallow'`, so an import is rejected unless a policy allows it. `module-public-api` (`eslint.config.js:28`) is the only cross-module target any layer is allowed to reach (`eslint.config.js:65`, `:78`, `:91`, `:116`), which makes a relative path into a sibling module a lint error.
+- **A regex ban on deep alias paths** (`eslint.config.js:163-174`). This one is not redundant: a deep alias like `@modules/administration/application/user-facade` does not resolve through the `tsconfig` mapping, so `eslint-plugin-boundaries` classifies it as an *external package* and its allow-external policy lets it through. Without this rule the most plausible violation - the one that looks legitimate because it uses the alias - would pass lint. It was caught by the Phase 0 negative proof, not by design.
+- **tsconfig `paths`** (`tsconfig.json:17`). `@modules/*` maps to `./src/app/modules/*/index.ts`, so a deep alias path resolves to a non-existent `index.ts` and fails to compile.
 - **`smart-reviewer`.** Judges what tooling cannot: whether `index.ts` is exporting more than it should, and whether a new cross-module dependency should exist at all.
 - **`smart-pipeline` capability check.** Any change adding a cross-module import routes to this page first.
 
-All three land with the first implementation PR. Until then, the boundary rests on review and on root `CLAUDE.md` Rule H.
+The lint gate blocks every PR (`.github/workflows/ci.yml:22-23`).
 
 ## Change protocol
 

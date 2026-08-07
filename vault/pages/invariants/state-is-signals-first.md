@@ -1,22 +1,27 @@
 ---
 title: "Shared state is held in signals"
-version: "1.0"
-date: 2026-08-07
-changes: "Initial invariant for signals first state"
+version: "1.1"
+date: 2026-08-08
+changes: "Recorded that this invariant stays reviewer-enforced after Phase 0"
 page_type: invariant
 status: active
 description: "Component and shared state is held in signals; no new BehaviorSubject backed state is introduced."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
+enforced_by:
+  - "Reviewer-enforced. This is the one invariant of the five with no lint rule: `smart-reviewer` plus root CLAUDE.md Rule A are the whole mechanism."
+  - "eslint.config.js:85-94 - partial and indirect only: ui cannot import infrastructure, which structurally prevents a component fetching its own copy of shared data"
+verified_by:
+  - "Facade specs asserting state transitions through the public surface, per [[pages/conventions/testing]]. None exist yet - no module has been written."
 ---
 
 # Shared state is held in signals
 
 > All component and shared state is held in signals. No new `BehaviorSubject`-backed state is introduced. RxJS is used for genuine event streams, converted to a signal at the boundary.
 
-**Not enforced yet.** Accepted as part of [[pages/decisions/0001-modular-monolith-architecture]]; takes effect with the first module. Root Rule A already states the signals-first position.
+**Reviewer-enforced, and it stays that way.** Phase 0 made the other four invariants mechanical; this one deliberately did not get a lint rule, because every violation below depends on what the state *means* rather than on which file imports which. Accepted as part of [[pages/decisions/0001-modular-monolith-architecture]]; root Rule A states the same position.
 
 ## Why this is load-bearing
 
@@ -79,14 +84,13 @@ Two of those deserve calling out because they are not obviously wrong at a glanc
 
 The last example - a component with its own `HttpClient` and its own copy of shared data - also violates root Rule A directly, and is how two screens end up showing different values for the same record.
 
-## Enforcement (planned)
+## Enforcement
 
-- **`smart-reviewer`.** The primary mechanism. Public writable signals, derivation via `effect()`, new `BehaviorSubject` state, and components holding shared state are review findings; none is expressible as a lint rule, because each depends on what the state *means*.
-- **A `no-restricted-imports` or custom lint rule** flagging `new BehaviorSubject` outside `infrastructure/`, as a blunt tripwire that forces the justification into the PR conversation.
-- **`eslint-plugin-boundaries`** keeps `ui/` from importing `infrastructure/`, which structurally prevents the component-fetches-its-own-data version.
+- **`smart-reviewer`.** The primary mechanism, and after Phase 0 the *only* direct one. Public writable signals, derivation via `effect()`, new `BehaviorSubject` state, and components holding shared state are review findings; none is expressible as a lint rule, because each depends on what the state means. A `signal()` that should have been `computed()` is indistinguishable from a correct one by syntax alone.
+- **`eslint-plugin-boundaries`** (`eslint.config.js:85-94`) keeps `ui/` from importing `infrastructure/`, which structurally prevents the component-fetches-its-own-data version - the last and worst example above. This is the only mechanical coverage this invariant has, and it catches one violation out of five.
 - **Facade specs** asserting state transitions through the public surface, per [[pages/conventions/testing]] - a facade whose public API is writable is awkward to spec, which surfaces the problem early.
 
-Lands with the first implementation PR.
+**Deliberately not added:** a lint rule flagging `new BehaviorSubject` outside `infrastructure/`. It was considered in Phase 0 and left out - the legitimate uses (genuine event streams, per the scope section above) are common enough that the rule would be suppressed on sight, and a rule people learn to disable is worse than no rule, because it reads as coverage that is not there.
 
 ## Change protocol
 
