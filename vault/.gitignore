@@ -1,0 +1,27 @@
+# Obsidian workspace & per-user state
+.obsidian/workspace.json
+.obsidian/workspaces.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node / build artifacts (if anyone runs tools in here)
+node_modules/
+dist/
+build/
+
+# Secrets (defense-in-depth; nothing secret should ever land in the vault)
+.env
+.env.*
+*.pem
+*.key

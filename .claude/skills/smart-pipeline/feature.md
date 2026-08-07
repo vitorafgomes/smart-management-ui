@@ -1,0 +1,11 @@
+# Feature lane
+
+Stages in order; exit criteria per stage. Once the vault is populated (Phase 2), repo facts move to the linked vault pages; until then this file is self-contained.
+
+1. **Pre-flight** - decide before coding: where the feature lives (route + lazy-loaded boundary); what state it owns and where that state lives (component signal vs. injectable service - Rule A); its data contract (typed request/response, which service owns the call); its authorization surface (which guard, and what happens on refusal); its loading / empty / error states (Rule G - all three are real states); which existing components it reuses instead of duplicating.
+2. **Vault route** - `vault/pages/features/<feature>.md` + every linked invariant + relevant ADRs (Phase 2; until then use root `CLAUDE.md` Rules + code), **then the capability check in SKILL.md gate 1** - a feature is where a surface most often gains its first route guard, its first form, or its first HTTP error path, and the feature page carries no rules for a capability it does not yet have. Exit: no invariant conflict (else stop -> superseding ADR first).
+3. **UI/UX first** - any new user-facing surface runs `ui-ux-pro-max:ui-ux-pro-max` **before** markup is written; `frontend-design:frontend-design` when the visual direction is still open; `dataviz` before the first line of any chart or dashboard code. Exit: a decided layout, states, and interaction model - not a blank component to fill in later.
+4. **Plan** - non-trivial features get a plan with Mermaid diagrams (component/data-flow; route + guard flow when the auth surface changes) BEFORE implementation approval.
+5. **Implement** - Rule B per edit. Standalone components, signals-first state, typed service for every HTTP call, new route wired to its guard and lazy-loaded to match its siblings.
+6. **Audits (diff-gated)** - per the routing table in `AGENTS.md`: new user-facing surface -> `accessibility-tester`; external boundary (HTTP, storage, browser APIs) -> `production-readiness-checks` (minimum one test per boundary simulating the call failing); new/changed specs -> `qa-expert` for gaps.
+7. **Gates 4-8** from SKILL.md (build -> tests + prettier -> review -> crystallize -> commit-message stop). Build/test/format runs dispatch to `smart-mechanic`; audits to a sonnet subagent (SKILL.md §Token rules - model routing).
