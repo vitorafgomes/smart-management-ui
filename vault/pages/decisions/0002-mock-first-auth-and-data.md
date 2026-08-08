@@ -1,8 +1,8 @@
 ---
 title: "ADR 0002 - Mock first auth and data"
-version: "1.0"
+version: "1.1"
 date: 2026-08-07
-changes: "Initial ADR accepting mocked auth and data for this phase"
+changes: "Phase 2 retro: enforcement requires the failure seam to be reachable from outside the app"
 page_type: adr
 status: accepted
 description: "In this phase every domain port has an in-memory mock implementation and authentication is mocked; no real backend integration."
@@ -11,7 +11,7 @@ superseded_by: ""
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # ADR 0002 - Mock first auth and data
@@ -70,6 +70,7 @@ The mock adapter is a real implementation of a real interface, not a placeholder
 - **`smart-reviewer`** flags fixture data appearing in `domain/` or `ui/`, and mocks that cannot produce a failure.
 - **Facade specs** already exercise both the success and failure transitions ([[pages/conventions/testing]]), which keeps the error paths real even while the data is not.
 - **The correlation interceptor and its pinning test are written now**, not deferred to the first real call.
+- **The failure seam must be reachable from outside the running app**, not only from unit-test fakes. `identity` exposes it via `localStorage` keys `identity-mock-failure` and `identity-mock-latency`, so a Playwright test can force a failure or a slow response without touching source. Without an externally reachable seam, the E2E error-state smoke spec ([[pages/conventions/testing]]) cannot be written against a mock adapter.
 - **Per-port tracking** in [[pages/migration/migration-status]] records which ports are still mocked.
 
 ## Related

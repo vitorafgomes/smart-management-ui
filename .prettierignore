@@ -8,3 +8,15 @@ coverage/
 playwright-report/
 test-results/
 node_modules/
+
+# Markdown docs (vault, .claude agents/skills, root docs) are the vault's own
+# formatting domain, not Prettier's - the check gate is scoped to code.
+*.md
+
+# Hand-edited / scaffold-formatted config, not reformatted by Prettier.
+wrangler.jsonc
+tsconfig*.json
+
+# Obsidian's own generated app config and a vendored community plugin -
+# vendor payload, same reasoning as src/assets/ above.
+vault/.obsidian/

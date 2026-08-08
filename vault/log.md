@@ -1,3 +1,5 @@
+## [2026-08-08] crystallize | Phase 2 retro: port rules hardened (promise ports, token placement, route split), prettier gate added
+
 ## [2026-08-08] ingest | Phase 2 landed: identity module ported from mfe-identity-tenant (mock data)
 
 ## [2026-08-08] ingest | Phase 1 landed: SmartAdmin theming, shell layouts, mock auth/tenant, error handler, toasts

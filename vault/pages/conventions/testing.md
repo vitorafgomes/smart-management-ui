@@ -1,8 +1,8 @@
 ---
 title: "Testing convention"
-version: "1.2"
+version: "1.3"
 date: 2026-08-08
-changes: "Phase 1: boot and deep-link smoke specs built against the real shell"
+changes: "Phase 2 retro: added mock-adapter row to the what-to-test table"
 page_type: convention
 status: active
 description: "What must have a Vitest spec, how specs are written per layer, and the planned Playwright smoke suite."
@@ -30,6 +30,7 @@ Two levels: Vitest unit specs gating **every edit**, and a Playwright smoke suit
 | Guards and resolvers | Always | Both outcomes: allow and the redirect. |
 | Pipes and pure helpers | Always | Transform behaviour, including edge inputs. |
 | `infrastructure/` repositories | Always | Request shape, response mapping, and the failure path. |
+| `infrastructure/` mock adapters | Always | Seeded behaviour matches the port's contract, the conflict and not-found rules produce the same shape a real adapter would, and the forced-failure seam is actually exercised, not just the happy path. |
 | Components with logic | Yes | The behaviour, not the markup. |
 | Pure presentational components | No | If it only renders its inputs, a spec asserts the template back to itself. |
 | Wiring with nothing to assert | No, but say so | Root Rule B: state explicitly that there is nothing meaningful to assert. Never skip silently. |

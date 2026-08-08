@@ -12,16 +12,13 @@ async function signIn(page: Page): Promise<void> {
 
 /** Seeds the mock session the way a previous visit would have left it, without a login round trip. */
 async function seedSession(page: Page): Promise<void> {
-  await page.addInitScript(
-    ([key, value]) => window.localStorage.setItem(key, value),
-    [
-      SESSION_KEY,
-      JSON.stringify({
-        user: { id: 'mock-user', name: 'ada', email: 'ada@smart.dev', initials: 'AD' },
-        issuedAt: Date.now(),
-      }),
-    ] as const,
-  );
+  await page.addInitScript(([key, value]) => window.localStorage.setItem(key, value), [
+    SESSION_KEY,
+    JSON.stringify({
+      user: { id: 'mock-user', name: 'ada', email: 'ada@smart.dev', initials: 'AD' },
+      issuedAt: Date.now(),
+    }),
+  ] as const);
 }
 
 test.describe('shell and mock auth', () => {

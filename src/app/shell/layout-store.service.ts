@@ -57,7 +57,10 @@ export class LayoutStoreService {
   }
 
   toggleTheme(): void {
-    this._state.update((state) => ({ ...state, theme: state.theme === 'light' ? 'dark' : 'light' }));
+    this._state.update((state) => ({
+      ...state,
+      theme: state.theme === 'light' ? 'dark' : 'light',
+    }));
   }
 
   toggleNavMinified(): void {

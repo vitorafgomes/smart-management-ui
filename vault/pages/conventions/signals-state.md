@@ -1,15 +1,15 @@
 ---
 title: "Signals state convention"
-version: "1.1"
+version: "1.2"
 date: 2026-08-07
-changes: "Added signals RxJS interop decision table"
+changes: "Phase 2 retro: mutation methods return a success boolean instead of void"
 page_type: convention
 status: active
 description: "The facade pattern for state: private writable signals, public readonly and computed, loading and error as real states."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # Signals state convention
@@ -67,6 +67,7 @@ The shape, stated as rules:
 2. **Everything public is `asReadonly()` or `computed()`.** A component can never reach in and `set()`.
 3. **Derived values are `computed()`, never a second writable signal kept in sync.** If two signals can disagree, one of them should have been a `computed()`.
 4. **State mutation happens only inside facade methods.** Those methods are the use cases and they are what specs exercise.
+5. **Mutation methods that can fail return a success boolean**, not `void`. A `create()` that resolves `Promise<boolean>` lets the calling form decide whether to navigate away directly; a `create()` returning `void` forces the component to re-read the error signal just to infer the outcome.
 
 ## Loading, error and data are all real states
 
