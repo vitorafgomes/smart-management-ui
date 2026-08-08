@@ -4,9 +4,20 @@ import { LayoutStoreService } from './layout-store.service';
 
 const STORAGE_KEY = 'smart-management-layout';
 
+const DEFAULTS = {
+  theme: 'light',
+  skin: 'default',
+  navMinified: false,
+  darkNavigation: true,
+};
+
 function freshStore(): LayoutStoreService {
   TestBed.resetTestingModule();
   return TestBed.inject(LayoutStoreService);
+}
+
+function themeLink(): HTMLLinkElement {
+  return document.getElementById('app-theme') as HTMLLinkElement;
 }
 
 describe('LayoutStoreService', () => {
@@ -14,12 +25,19 @@ describe('LayoutStoreService', () => {
     localStorage.clear();
     document.documentElement.className = '';
     document.documentElement.removeAttribute('data-bs-theme');
+
+    // index.html parks this link in <body>; the TestBed document has no markup of its own.
+    document.getElementById('app-theme')?.remove();
+    const link = document.createElement('link');
+    link.id = 'app-theme';
+    link.rel = 'stylesheet';
+    document.body.appendChild(link);
   });
 
   it('starts light, expanded and with dark navigation', () => {
     const store = freshStore();
 
-    expect(store.state()).toEqual({ theme: 'light', navMinified: false, darkNavigation: true });
+    expect(store.state()).toEqual(DEFAULTS);
     expect(store.mobileMenuOpen()).toBe(false);
   });
 
@@ -74,11 +92,7 @@ describe('LayoutStoreService', () => {
   it('falls back to the defaults when the stored state is corrupt', () => {
     localStorage.setItem(STORAGE_KEY, '{not json');
 
-    expect(freshStore().state()).toEqual({
-      theme: 'light',
-      navMinified: false,
-      darkNavigation: true,
-    });
+    expect(freshStore().state()).toEqual(DEFAULTS);
   });
 
   it('returns to the defaults on reset', () => {
@@ -89,7 +103,45 @@ describe('LayoutStoreService', () => {
 
     store.reset();
 
-    expect(store.state()).toEqual({ theme: 'light', navMinified: false, darkNavigation: true });
+    expect(store.state()).toEqual(DEFAULTS);
     expect(store.mobileMenuOpen()).toBe(false);
+  });
+
+  it('leaves the theme link href-less on the default skin', () => {
+    freshStore();
+    TestBed.tick();
+
+    expect(themeLink().hasAttribute('href')).toBe(false);
+  });
+
+  it('points the theme link at the chosen skin stylesheet', () => {
+    const store = freshStore();
+
+    store.setSkin('nebula');
+    TestBed.tick();
+
+    expect(store.state().skin).toBe('nebula');
+    expect(themeLink().getAttribute('href')).toBe('/assets/css/nebula.css');
+  });
+
+  it('clears the theme link when the skin goes back to default', () => {
+    const store = freshStore();
+    store.setSkin('storm');
+    TestBed.tick();
+
+    store.setSkin('default');
+    TestBed.tick();
+
+    expect(themeLink().hasAttribute('href')).toBe(false);
+  });
+
+  it('ignores a stored skin that is not one of the shipped stylesheets', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULTS, skin: '../../evil' }));
+
+    const store = freshStore();
+    TestBed.tick();
+
+    expect(store.state().skin).toBe('default');
+    expect(themeLink().hasAttribute('href')).toBe(false);
   });
 });

@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { BackgroundAnimation } from '../../../components/background-animation/background-animation';
+
 @Component({
   selector: 'app-landing-hero',
-  imports: [RouterLink],
+  imports: [RouterLink, BackgroundAnimation],
   templateUrl: './landing-hero.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

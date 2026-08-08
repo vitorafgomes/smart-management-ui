@@ -33,6 +33,28 @@ test.describe('shell and mock auth', () => {
     await expect(page.getByTestId('navbar-register')).toBeVisible();
   });
 
+  test('paints the animated hero backdrop on the landing page', async ({ page }) => {
+    await page.goto('/');
+
+    // vanta draws into a canvas it appends to #net once three.js has loaded.
+    await expect(page.locator('app-landing-hero #net canvas')).toBeAttached();
+  });
+
+  test('paints the animated hero backdrop behind the auth screens', async ({ page }) => {
+    await page.goto('/auth/login');
+
+    await expect(page.locator('app-auth-layout #net canvas')).toBeAttached();
+  });
+
+  test('ships the runtime theme link and leaves it on the default skin', async ({ page }) => {
+    await page.goto('/');
+
+    const themeLink = page.locator('link#app-theme');
+    await expect(themeLink).toHaveCount(1);
+    await expect(themeLink).toHaveAttribute('rel', 'stylesheet');
+    expect(await themeLink.getAttribute('href')).toBeNull();
+  });
+
   test('sends an authenticated visitor from the root into the app', async ({ page }) => {
     await seedSession(page);
 
