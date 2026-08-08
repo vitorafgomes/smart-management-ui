@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { authEnabledGuard } from '@shared-kernel/auth/auth-enabled.guard';
 import { authGuard } from '@shared-kernel/auth/auth.guard';
 import { publicGuard } from '@shared-kernel/auth/public.guard';
 
@@ -23,7 +24,10 @@ export const routes: Routes = [
   {
     path: 'auth',
     component: AuthLayout,
-    canActivate: [publicGuard],
+    // authEnabledGuard runs first: when auth is switched off, these routes have nothing to
+    // serve, so authGuard's own redirect to /auth/login lands here and back out to '/' rather
+    // than dead-ending on an auth screen with no login behind it.
+    canActivate: [authEnabledGuard, publicGuard],
     children: [
       { path: 'login', component: Login, title: 'Sign in' },
       { path: 'register', component: Register, title: 'Create account' },

@@ -7,17 +7,19 @@
       [brandSecondary]="brandSecondary"
     />
 
-    <div class="ms-auto d-flex gap-2">
-      <a
-        routerLink="/auth/login"
-        class="btn btn-link text-white border-0 text-decoration-none"
-        data-testid="navbar-sign-in"
-      >
-        Sign in
-      </a>
-      <a routerLink="/auth/register" class="btn btn-primary px-3" data-testid="navbar-register">
-        Create account
-      </a>
-    </div>
+    @if (authEnabled) {
+      <div class="ms-auto d-flex gap-2">
+        <a
+          routerLink="/auth/login"
+          class="btn btn-link text-white border-0 text-decoration-none"
+          data-testid="navbar-sign-in"
+        >
+          Sign in
+        </a>
+        <a routerLink="/auth/register" class="btn btn-primary px-3" data-testid="navbar-register">
+          Create account
+        </a>
+      </div>
+    }
   </div>
 </nav>
