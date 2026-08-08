@@ -27,6 +27,7 @@ const architectureSettings = {
     { type: 'ui', pattern: ['modules/*/ui', 'modules/*/ui/**'], capture: ['module'] },
     { type: 'module-public-api', pattern: 'modules/*', capture: ['module'] },
     { type: 'shared-kernel', pattern: ['app/shared-kernel', 'app/shared-kernel/**'] },
+    { type: 'environments', pattern: ['environments', 'environments/**'] },
     { type: 'shell', pattern: ['src', 'app', 'app/shell', 'app/shell/**'] },
   ],
   'import/resolver': {
@@ -41,10 +42,18 @@ const architecturePolicies = [
   // Third-party packages are not part of the architecture graph.
   { allow: { to: { module: { origin: 'external' } } } },
 
-  // The shared kernel is self-contained: it knows nothing about any module.
+  // The shared kernel is self-contained: it knows nothing about any module. It may read
+  // build-time environment config (e.g. the auth-enabled flag), which carries no module
+  // knowledge of its own.
   {
     from: { element: { type: 'shared-kernel' } },
-    allow: { to: { element: { type: 'shared-kernel' } } },
+    allow: { to: { element: { types: ['shared-kernel', 'environments'] } } },
+  },
+
+  // Environments are pure build-time config: no imports of their own beyond each other.
+  {
+    from: { element: { type: 'environments' } },
+    allow: { to: { element: { type: 'environments' } } },
   },
 
   // Domain: its own module's domain only. Pure TypeScript, no shared kernel, no other layer.

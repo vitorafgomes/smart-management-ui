@@ -1,3 +1,5 @@
+## [2026-08-08] ingest | Public version gated to landing-only; auth behind environment flag for the next release
+
 ## [2026-08-08] ingest | Dependency security policy: Rule I, supply-chain convention, CI audit gate
 
 ## [2026-08-08] crystallize | Atom logo mark (independent white rings, highlighted primary) and smooth route transitions (view transitions + preload-all) shipped

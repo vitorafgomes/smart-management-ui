@@ -15,12 +15,24 @@
           matter on the same screen as the work that produces them.
         </p>
 
-        <div class="d-flex gap-3 justify-content-center justify-content-md-start">
-          <a routerLink="/auth/register" class="btn btn-primary btn-lg px-4 py-2">
-            Create account
-          </a>
-          <a routerLink="/auth/login" class="btn btn-outline-light btn-lg px-4 py-2">Sign in</a>
-        </div>
+        @if (authEnabled) {
+          <div class="d-flex gap-3 justify-content-center justify-content-md-start">
+            <a
+              routerLink="/auth/register"
+              class="btn btn-primary btn-lg px-4 py-2"
+              data-testid="hero-register"
+            >
+              Create account
+            </a>
+            <a
+              routerLink="/auth/login"
+              class="btn btn-outline-light btn-lg px-4 py-2"
+              data-testid="hero-sign-in"
+            >
+              Sign in
+            </a>
+          </div>
+        }
       </div>
     </div>
   </div>

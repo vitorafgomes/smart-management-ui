@@ -1,8 +1,8 @@
 ---
 title: "Migration status"
-version: "1.5"
+version: "1.6"
 date: 2026-08-08
-changes: "Landing visual fidelity: vanta hero, app-theme mechanism, gallery assets, company logo blob"
+changes: "Public release scope decision: production ships landing-only, auth gated behind environment flag"
 page_type: roadmap
 status: active
 description: "Module map from the legacy micro frontends to target modules, with per area status and cross cutting porting work."
@@ -19,6 +19,8 @@ The tracker for moving the legacy micro-frontend app into this repository's modu
 **One bounded-context module is migrated.** `identity` landed in Phase 2 on mock data ([[pages/modules/identity]]); every other row in the module map below `shell` is still `not started`. The chrome moved in Phase 1: the app boots into the ported SmartAdmin layout behind a mock auth guard.
 
 > **Phase 0 (enforcement foundation) landed on 2026-08-08.** It deliberately ports no feature: what it delivers is the tooling that makes the architecture self-enforcing before the first module is written - `angular-eslint` + `eslint-plugin-boundaries` with the layer and module rules proven to fire against deliberate violations, the `tsconfig` path mapping, the correlation interceptor and its pinning spec, a Playwright boot smoke test, and a GitHub Actions pipeline running lint, build, unit and E2E on every PR. The only cross-cutting row below that moves as a result is observability and correlation. See [[pages/roadmap/migration-plan]].
+
+> **Product decision, 2026-08-08: the published version is landing-only.** Login and the back office ship in the next release, so `authEnabled` in `src/environments/environment.production.ts` is `false` for this build - the landing hides its Sign in / Create account CTAs and `/auth/**` redirects to the landing (`authEnabledGuard` in `shared-kernel/auth/`) - while `environment.ts` keeps it `true` so `ng serve`, `ng test` and the E2E suite still exercise the full app unchanged; re-enabling for the next release is that one boolean.
 
 > **The public face landed on 2026-08-08.** `/` is no longer a redirect to login: an anonymous visitor gets the ported SmartAdmin **landing page** (`shell/pages/landing/`, lazy-loaded), and an authenticated one is forwarded to `/dashboard` by `publicGuard`. Signup is live as a mock: `shell/pages/register/` drives `AuthStateService.register()`, which records the account under `smart-management-auth-accounts` in `localStorage` so a duplicate email produces a real, visible failure per root Rule G - **no password is ever stored**, because mock login accepts any password anyway ([[pages/decisions/0002-mock-first-auth-and-data]]). Both auth screens now sit on the theme's gradient backdrop rather than a bare page. **Forgot-password, lock-screen and two-factor were deliberately not ported**: mock auth has no recovery, no lock and no second factor, so each screen would be a control that does nothing (root Rule C).
 
