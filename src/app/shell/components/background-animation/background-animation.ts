@@ -57,7 +57,7 @@ export class BackgroundAnimation {
 
   private async start(): Promise<void> {
     try {
-      const [three, halo] = await Promise.all([
+      const [three, haloModule] = await Promise.all([
         import('three'),
         import('vanta/dist/vanta.halo.min'),
       ]);
@@ -67,7 +67,18 @@ export class BackgroundAnimation {
         return;
       }
 
-      this.effect = halo.default({
+      // vanta ships a UMD build; depending on bundler interop the factory arrives as the
+      // namespace default (dev server) or nested one level deeper (production esbuild).
+      const unwrapped = (haloModule as { default?: unknown }).default ?? haloModule;
+      const haloFactory = (
+        typeof unwrapped === 'function' ? unwrapped : (unwrapped as { default?: unknown }).default
+      ) as (options: Record<string, unknown>) => VantaEffect;
+
+      if (typeof haloFactory !== 'function') {
+        throw new TypeError('vanta HALO factory not found in module shape');
+      }
+
+      this.effect = haloFactory({
         el: this.vantaHost().nativeElement,
         THREE: three,
         mouseControls: false,
