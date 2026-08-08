@@ -44,6 +44,8 @@ The chrome every module renders inside; nothing module-specific.
 
 **Exit criteria:** app boots into the ported layout with mock auth gating routes; E2E smoke covers login-redirect and layout render; gates green.
 
+**Status: done, 2026-08-08.** All four gates green. The theme forced a deliberate budget change (initial 500 kB to 1 MB warning) - the SmartAdmin global CSS alone is 507 kB raw / 61 kB transferred, and it is the product's look, not accidental weight. What was consciously left out: everything in the ported chrome that needed a dependency with no consumer yet (`@ng-bootstrap` collapse/dropdown/offcanvas, simplebar, ngx-toastr, vanta.js) was re-expressed with signals or dropped, so the only new dependency is `bootstrap` for the sass the theme imports. See [[pages/migration/migration-status]].
+
 ## Phase 2 - First module: identity
 
 `mfe-identity-tenant` goes first (per the recommendation in [[pages/migration/migration-status]]): it already separates domain/application/infrastructure/presentation, so it exercises the pattern without a redesign.

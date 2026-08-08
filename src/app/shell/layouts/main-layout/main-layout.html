@@ -1,0 +1,26 @@
+<div class="app-wrap">
+  <app-topbar class="app-header" />
+
+  <app-sidenav class="app-sidebar d-flex flex-column" />
+
+  <main class="app-body">
+    <div class="app-content">
+      <div class="content-wrapper">
+        <router-outlet />
+      </div>
+    </div>
+
+    <app-footer />
+  </main>
+
+  @if (layout.mobileMenuOpen()) {
+    <button
+      type="button"
+      class="offcanvas-backdrop sidenav-backdrop fade show border-0"
+      aria-label="Close navigation"
+      (click)="layout.closeMobileMenu()"
+    ></button>
+  }
+</div>
+
+<app-toast-outlet />

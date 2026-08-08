@@ -1,0 +1,46 @@
+<app-app-logo />
+
+<form class="app-menu-filter-container px-4" role="search">
+  <label class="visually-hidden" for="menu-filter">Filter menu</label>
+  <input
+    id="menu-filter"
+    type="text"
+    class="form-control"
+    placeholder="Filter"
+    autocomplete="off"
+    [value]="filterText()"
+    (input)="updateFilter($event)"
+  />
+</form>
+
+<div id="sidenav" class="flex-grow-1 overflow-auto">
+  <nav id="js-primary-nav" class="primary-nav flex-grow-1 custom-scroll" aria-label="Main">
+    @if (loading()) {
+      <div class="px-4 py-3" data-testid="menu-loading">
+        @for (placeholder of [1, 2, 3, 4, 5]; track placeholder) {
+          <div class="placeholder-glow mb-2">
+            <span
+              class="placeholder col-9 rounded"
+              style="height: 12px; display: block; opacity: 0.15"
+            ></span>
+          </div>
+        }
+      </div>
+    } @else {
+      <app-menu [items]="filteredItems()" [expandAll]="isFiltering()" />
+
+      @if (!hasResults()) {
+        <div class="no-results-msg pt-3 info-container px-4">
+          <h6 class="mb-1">No menu items found.</h6>
+          <p class="fs-sm">Try searching with different keywords.</p>
+        </div>
+      }
+    }
+  </nav>
+</div>
+
+<div class="nav-footer">
+  <svg class="sa-icon sa-thin" aria-hidden="true">
+    <use href="/assets/icons/sprite.svg#wifi"></use>
+  </svg>
+</div>

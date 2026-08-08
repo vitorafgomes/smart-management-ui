@@ -1,0 +1,10 @@
+# Vendor payload: the SmartAdmin theme is ported verbatim from the legacy shell and is never
+# hand-edited, so reformatting it would only produce noise in every future diff against upstream.
+src/assets/
+
+dist/
+.angular/
+coverage/
+playwright-report/
+test-results/
+node_modules/

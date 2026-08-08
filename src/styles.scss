@@ -1,1 +1,5 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles: the SmartAdmin theme, ported verbatim from the legacy shell.
+   Everything under src/assets/ is vendor payload - edit the app's own styles here or in a
+   component, never inside assets/sass/. */
+@use './assets/webfonts/smartadmin/scss/sa-icons.scss';
+@use './assets/sass/smartapp';

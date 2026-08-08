@@ -1,3 +1,5 @@
+## [2026-08-08] ingest | Phase 1 landed: SmartAdmin theming, shell layouts, mock auth/tenant, error handler, toasts
+
 ## [2026-08-08] ingest | Phase 0 enforcement landed: eslint boundaries, correlation interceptor, Playwright, CI
 
 ## [2026-08-08] ingest | Phased migration plan (foundation, shell, identity-first, module waves)

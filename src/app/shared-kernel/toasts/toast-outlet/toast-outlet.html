@@ -1,0 +1,22 @@
+<div
+  class="toast-container position-fixed top-0 end-0 p-3"
+  data-testid="toast-outlet"
+  aria-live="polite"
+  aria-atomic="true"
+>
+  @for (toast of toasts.toasts(); track toast.id) {
+    <div class="toast fade show" role="alert">
+      <div class="toast-header">
+        <span class="badge me-2" [class]="badgeFor(toast.tone)">&nbsp;</span>
+        <strong class="me-auto">{{ toast.title }}</strong>
+        <button
+          type="button"
+          class="btn-close"
+          aria-label="Dismiss notification"
+          (click)="toasts.dismiss(toast.id)"
+        ></button>
+      </div>
+      <div class="toast-body">{{ toast.message }}</div>
+    </div>
+  }
+</div>

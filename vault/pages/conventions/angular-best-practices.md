@@ -1,8 +1,8 @@
 ---
 title: "Angular best practices"
-version: "1.0"
-date: 2026-08-07
-changes: "Initial house rules based on official Angular guidance"
+version: "1.1"
+date: 2026-08-08
+changes: "Phase 1: added the rules for porting legacy templates onto the ported theme"
 page_type: convention
 status: active
 description: "Official angular.dev guidance adopted as house rules for smart-management-ui, with notes on what lint will enforce."
@@ -122,6 +122,18 @@ Angular's current style guide: file names in kebab-case, named for what the file
 ## TypeScript
 
 `strict` stays on. No `any` without a written justification (root Rule B). Prefer `unknown` plus narrowing at boundaries. Type HTTP responses explicitly in `infrastructure/`; never let an untyped response leak into `application/`.
+
+## Porting a legacy template
+
+Learned porting the shell in Phase 1, and it applies to every module port that follows.
+
+**Keep the vendor class names, replace the vendor behaviour.** The SmartAdmin CSS keys off exact class names (`nav-item has-ul`, `collapse show`, `dropdown-menu show`, `app-wrap`, `app-header`), so the markup structure and its classes are copied as-is - that is what makes the port look like the original. What does *not* come across is the JavaScript behind those classes. `@ng-bootstrap`'s `ngbCollapse` and `ngbDropdown` exist to toggle `show`; a `signal()` plus `[class.show]="isOpen()"` does the same thing with no dependency, and root Rule C says do not add a package to toggle a class.
+
+**Do not mutate the input array to hold UI state.** The legacy menu stored `isCollapsed` on the menu items themselves and wrote to them from the component, which mutates data owned by a service through an `input()`. Open/closed is view state: hold it in the component, keyed by something stable from the item, and derive the rest with `computed()`.
+
+**Vendor stylesheets are not source.** A ported sass payload lives under `src/assets/`, is listed in `.prettierignore`, and needs its deprecation warnings silenced via `stylePreprocessorOptions.sass.silenceDeprecations` in `angular.json` rather than by editing it - the build gate demands zero warnings and the payload must stay diffable against upstream.
+
+**Expect the a11y lint to reject the original markup.** SmartAdmin uses `<a (click)>` for buttons. `angular-eslint`'s template accessibility rules will not accept it: use a real `<button>` where the styling allows, and where it does not, add `role="button"`, `tabindex="0"` and keyboard handlers alongside the click.
 
 ## Enforcement (planned)
 
