@@ -1,3 +1,5 @@
+## [2026-08-08] ingest | Landing page and mock registration landed; public home replaces login redirect
+
 ## [2026-08-08] crystallize | Phase 2 retro: port rules hardened (promise ports, token placement, route split), prettier gate added
 
 ## [2026-08-08] ingest | Phase 2 landed: identity module ported from mfe-identity-tenant (mock data)

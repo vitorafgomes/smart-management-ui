@@ -1,0 +1,39 @@
+<section class="faq-section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="display-6 fw-700 mb-3">Frequently asked questions</h2>
+      <p class="lead text-muted">The four things people ask before they sign up.</p>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="accordion">
+          @for (faq of faqs; track faq.question; let index = $index) {
+            <div class="accordion-item border-0 mb-3">
+              <h3 class="accordion-header">
+                <button
+                  type="button"
+                  class="accordion-button"
+                  [class.collapsed]="!isOpen(faq.question)"
+                  [attr.aria-expanded]="isOpen(faq.question)"
+                  [attr.aria-controls]="'faq-answer-' + index"
+                  (click)="toggle(faq.question)"
+                >
+                  {{ faq.question }}
+                </button>
+              </h3>
+
+              <div
+                [id]="'faq-answer-' + index"
+                class="accordion-collapse collapse"
+                [class.show]="isOpen(faq.question)"
+              >
+                <div class="accordion-body text-muted">{{ faq.answer }}</div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

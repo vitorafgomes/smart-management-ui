@@ -3,3 +3,25 @@
    component, never inside assets/sass/. */
 @use './assets/webfonts/smartadmin/scss/sa-icons.scss';
 @use './assets/sass/smartapp';
+
+/* The landing gradient, lifted out of assets/sass/app/_landing.scss where the theme scopes it
+   to `.app-landing`, so the landing hero and the auth screens can share one backdrop. The
+   custom properties it reads are declared on `:root` by that same file. Upstream paints a
+   vanta.js canvas over this gradient; that dependency is deliberately not ported
+   (vault/pages/migration/migration-status.md), so the gradient carries the look on its own.
+
+   The selector names `.hero-section` because it has to: the theme sets a flat `#333333` on
+   `.app-landing .hero-section`, and a lone class would lose that specificity contest. Both
+   surfaces this applies to are hero sections, so the pairing costs nothing. */
+.hero-section.themed-backdrop {
+  background-color: var(--body-bg);
+  background-image:
+    radial-gradient(ellipse at bottom, var(--body-bg) 5%, transparent 60%),
+    linear-gradient(136deg, transparent, var(--gp-color-1) 290%),
+    linear-gradient(115deg, var(--gp-color-1), transparent 40%),
+    linear-gradient(180deg, transparent 0, var(--body-bg) 70%),
+    radial-gradient(ellipse at -70% -180%, transparent 80%, var(--gp-color-1) 0),
+    radial-gradient(ellipse at bottom, var(--body-bg) 40%, transparent 80%),
+    radial-gradient(ellipse at 5% 340%, transparent 80%, var(--gp-color-1) 0);
+  background-repeat: no-repeat;
+}

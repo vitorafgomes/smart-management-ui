@@ -41,12 +41,14 @@ describe('route guards', () => {
     expect(result).toBe(true);
   });
 
-  it('sends an authenticated user away from a public route', () => {
+  // The landing page is public and lives at '/', so this redirect has to name the dashboard:
+  // sending an authenticated user to '/' would bounce them straight back through this guard.
+  it('sends an authenticated user from a public route to the dashboard', () => {
     TestBed.inject(AuthStateService).login({ username: 'ada', password: 'secret' });
 
     const result = TestBed.runInInjectionContext(() => publicGuard(route, state));
 
     expect(result).toBeInstanceOf(UrlTree);
-    expect(String(result)).toBe('/');
+    expect(String(result)).toBe('/dashboard');
   });
 });

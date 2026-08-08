@@ -1,12 +1,19 @@
 <nav class="navbar navbar-expand-lg navbar-dark position-fixed w-100 py-3" style="z-index: 1000">
   <div class="container">
-    <a class="navbar-brand" routerLink="/">
-      <img src="/assets/img/logo-light.svg" alt="Smart Management" height="36" width="180" />
-    </a>
+    <a class="navbar-brand fw-bold text-white fs-4" routerLink="/">{{ appName }}</a>
+
+    <div class="ms-auto d-flex gap-2">
+      <a routerLink="/auth/login" class="btn btn-link text-white border-0 text-decoration-none">
+        Sign in
+      </a>
+      <a routerLink="/auth/register" class="btn btn-link text-white border-0 text-decoration-none">
+        Create account
+      </a>
+    </div>
   </div>
 </nav>
 
-<section class="hero-section position-relative overflow-hidden">
+<section class="hero-section themed-backdrop position-relative overflow-hidden">
   <div class="container" style="position: relative; z-index: 1">
     <router-outlet />
   </div>
