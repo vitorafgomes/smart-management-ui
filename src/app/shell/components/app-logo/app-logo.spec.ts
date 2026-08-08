@@ -30,11 +30,10 @@ describe('AppLogo', () => {
     const fixture = render();
 
     expect(fixture.nativeElement.querySelector('.logo-mark')).not.toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.orbit-ring').length).toBe(3);
-    expect(fixture.nativeElement.querySelector('.orbit-ring-1 path')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.orbit-ring-2 path')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.orbit-ring-3 path')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.orbit-core')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.ring-1')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.ring-2')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.ring-3')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.core')).not.toBeNull();
   });
 
   it('names the current tenant when no brand is given, and points at the dashboard', () => {
