@@ -4,6 +4,13 @@
 @use './assets/webfonts/smartadmin/scss/sa-icons.scss';
 @use './assets/sass/smartapp';
 
+/* The theme paints its surfaces per-layout but leaves the document body alone, so anything
+   that outruns a layout's own background (route transitions, overscroll, slow chunks) exposed
+   flat white. Anchor the body to the theme's own background token instead. */
+body {
+  background-color: var(--body-bg);
+}
+
 /* The landing gradient, lifted out of assets/sass/app/_landing.scss where the theme scopes it
    to `.app-landing`, so the landing hero and the auth screens can share one backdrop. The
    custom properties it reads are declared on `:root` by that same file. It is what the hero
