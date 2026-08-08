@@ -33,10 +33,11 @@
   }
 }
 
-// The mark reads as a small atom: three orbit rings, each tilted on its own axis
-// and spinning independently, wrapping a static-ish pulsing core. Each ring is a
-// <g> (the static 3D tilt) around a <path> (the continuous orbit spin) so the two
-// transforms compose like a gimbal instead of fighting over one element.
+// The mark reads as a small atom: three orbit rings, each spinning independently
+// (opposite directions, different speeds) around its own center, plus a pulsing
+// core that never rotates. The rings are already drawn tilted/overlapping in the
+// source artwork, so a plain 2D per-ring rotation is enough to read as orbits -
+// no 3D transforms needed.
 .logo-mark {
   position: absolute;
   top: 50%;
@@ -45,59 +46,43 @@
   height: 80%;
   z-index: 3;
   transform: translate(-50%, -50%);
-  transform-origin: center;
-  perspective: 120px;
 
   fill: none;
   stroke-width: 1.5;
 }
 
-.orbit-ring {
-  transform-box: view-box;
-  transform-origin: 14.0467px 16.5173px;
-
-  path {
-    transform-box: view-box;
-    transform-origin: 14.0467px 16.5173px;
-    stroke: rgba(255, 255, 255, 0.95);
-    fill: none;
-  }
+.ring-1,
+.ring-2,
+.ring-3 {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.orbit-ring-1 {
-  transform: rotateX(60deg);
-
-  path {
-    stroke: rgba(255, 255, 255, 0.95);
-    animation: orbit-spin 8s linear infinite;
-  }
+.ring-1 {
+  stroke: #fff;
+  stroke-width: 2;
+  animation: ring-spin-cw 8s linear infinite;
 }
 
-.orbit-ring-2 {
-  transform: rotateX(-60deg);
-
-  path {
-    stroke: rgba(255, 255, 255, 0.8);
-    animation: orbit-spin 11s linear infinite reverse;
-  }
+.ring-2 {
+  stroke: rgba(255, 255, 255, 0.85);
+  animation: ring-spin-ccw 11s linear infinite;
 }
 
-.orbit-ring-3 {
-  path {
-    stroke: rgba(255, 255, 255, 0.65);
-    animation: orbit-spin 14s linear infinite;
-  }
+.ring-3 {
+  stroke: rgba(255, 255, 255, 0.7);
+  animation: ring-spin-cw 14s linear infinite;
 }
 
-.orbit-core {
+.core {
   fill: #fff;
   stroke: none;
   transform-box: fill-box;
   transform-origin: center;
-  animation: orbit-core-pulse 3s ease-in-out infinite;
+  animation: core-pulse 3s ease-in-out infinite;
 }
 
-@keyframes orbit-spin {
+@keyframes ring-spin-cw {
   from {
     transform: rotate(0deg);
   }
@@ -106,7 +91,16 @@
   }
 }
 
-@keyframes orbit-core-pulse {
+@keyframes ring-spin-ccw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes core-pulse {
   0%,
   100% {
     opacity: 0.85;
@@ -119,8 +113,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .orbit-ring path,
-  .orbit-core {
+  .ring-1,
+  .ring-2,
+  .ring-3,
+  .core {
     animation-play-state: paused;
   }
 }
