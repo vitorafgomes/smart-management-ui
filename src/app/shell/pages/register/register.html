@@ -1,0 +1,75 @@
+<div class="row justify-content-center">
+  <div class="col-11 col-md-8 col-lg-6 col-xl-4">
+    <div class="login-card p-4 p-md-6 bg-dark bg-opacity-50 translucent-dark rounded-4">
+      <h2 class="text-center mb-4">Create account</h2>
+      <p class="text-center text-white opacity-50 mb-4">
+        Signup is mocked in this phase - the account lives in this browser only.
+      </p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        @if (error(); as message) {
+          <div class="alert alert-danger" role="alert" data-testid="register-error">
+            {{ message }}
+          </div>
+        }
+
+        <div class="mb-3">
+          <label for="name" class="form-label">Full name</label>
+          <input
+            id="name"
+            type="text"
+            autocomplete="name"
+            formControlName="name"
+            class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="email" class="form-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            autocomplete="email"
+            formControlName="email"
+            class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input
+            id="password"
+            type="password"
+            autocomplete="new-password"
+            formControlName="password"
+            class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+          />
+        </div>
+
+        <div class="mb-4">
+          <label for="confirm-password" class="form-label">Confirm password</label>
+          <input
+            id="confirm-password"
+            type="password"
+            autocomplete="new-password"
+            formControlName="confirmPassword"
+            class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+          />
+        </div>
+
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn btn-primary btn-lg bg-primary bg-opacity-75">
+            Create account
+          </button>
+        </div>
+
+        <div class="text-center opacity-75">
+          Already have an account?
+          <a routerLink="/auth/login" class="text-decoration-underline text-white fw-500">
+            Sign in here
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

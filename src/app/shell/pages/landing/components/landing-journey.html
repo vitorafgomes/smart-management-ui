@@ -1,0 +1,33 @@
+<section class="journey-section">
+  <div class="container">
+    <div class="row mb-5">
+      <div class="col-lg-6 pt-5">
+        <span class="text-primary small text-uppercase fw-bold mb-2 d-block">Our journey</span>
+        <h2 class="h1 fw-bold mb-3">How the platform got here</h2>
+        <p class="text-muted mb-4">
+          Five years of consolidating one department at a time, and the direction the next release
+          takes.
+        </p>
+
+        <div class="d-flex gap-3">
+          <a href="#features" class="btn btn-outline-dark">What it does</a>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="timeline">
+          @for (milestone of milestones; track milestone.year) {
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <h3 class="h2 fw-bold">{{ milestone.year }}</h3>
+                <h4 class="h5 fw-bold">{{ milestone.title }}</h4>
+                <p class="text-muted">{{ milestone.description }}</p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

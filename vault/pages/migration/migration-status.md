@@ -1,8 +1,8 @@
 ---
 title: "Migration status"
-version: "1.3"
+version: "1.4"
 date: 2026-08-08
-changes: "Phase 2 landed: identity module on mock data; auth screens stay shell-owned"
+changes: "Landing page and mock registration landed; public home replaces the login redirect"
 page_type: roadmap
 status: active
 description: "Module map from the legacy micro frontends to target modules, with per area status and cross cutting porting work."
@@ -19,6 +19,8 @@ The tracker for moving the legacy micro-frontend app into this repository's modu
 **One bounded-context module is migrated.** `identity` landed in Phase 2 on mock data ([[pages/modules/identity]]); every other row in the module map below `shell` is still `not started`. The chrome moved in Phase 1: the app boots into the ported SmartAdmin layout behind a mock auth guard.
 
 > **Phase 0 (enforcement foundation) landed on 2026-08-08.** It deliberately ports no feature: what it delivers is the tooling that makes the architecture self-enforcing before the first module is written - `angular-eslint` + `eslint-plugin-boundaries` with the layer and module rules proven to fire against deliberate violations, the `tsconfig` path mapping, the correlation interceptor and its pinning spec, a Playwright boot smoke test, and a GitHub Actions pipeline running lint, build, unit and E2E on every PR. The only cross-cutting row below that moves as a result is observability and correlation. See [[pages/roadmap/migration-plan]].
+
+> **The public face landed on 2026-08-08.** `/` is no longer a redirect to login: an anonymous visitor gets the ported SmartAdmin **landing page** (`shell/pages/landing/`, lazy-loaded), and an authenticated one is forwarded to `/dashboard` by `publicGuard`. Signup is live as a mock: `shell/pages/register/` drives `AuthStateService.register()`, which records the account under `smart-management-auth-accounts` in `localStorage` so a duplicate email produces a real, visible failure per root Rule G - **no password is ever stored**, because mock login accepts any password anyway ([[pages/decisions/0002-mock-first-auth-and-data]]). Both auth screens now sit on the theme's gradient backdrop rather than a bare page. **Forgot-password, lock-screen and two-factor were deliberately not ported**: mock auth has no recovery, no lock and no second factor, so each screen would be a control that does nothing (root Rule C).
 
 > **Phase 2 (first module: identity) landed on 2026-08-08.** `modules/identity/` holds the users, roles and permission-catalogue surfaces from `mfe-identity-tenant`, on in-memory mock adapters. **The legacy module's auth screens were deliberately not ported** - login, register, forgot-password, two-factor and lock-screen, plus its Keycloak auth service, all duplicate a surface `shared-kernel/auth/` and `shell/pages/login/` already own since Phase 1, so authentication stays shell-owned. The legacy entities and repositories with no screen behind them (tenants, subscriptions, tenant settings, branding, company profiles, audit logs, groups) were left behind rather than ported as dead code. Full detail, including the mock failure seam: [[pages/modules/identity]].
 
@@ -39,6 +41,8 @@ Update the status column here as each module lands, and add its own `pages/modul
 | Legacy area | Legacy project | Target module | Status |
 |---|---|---|---|
 | Shell layout, nav, chrome | `projects/shell` (`layouts/`, `views/`, `components/`) | `src/app/shell/` | done (chrome only) |
+| Landing page | `shell/views/landing/` and its `components/` | `src/app/shell/pages/landing/` | **done** - every section but the newsletter, see below |
+| Auth screens | `shell/views/auth/` | `src/app/shell/pages/{login,register}/` | **done (mock)** - login and register only; forgot-password, lock-screen and two-factor deliberately not ported |
 | Identity, tenants, users, admin | `mfe-identity-tenant` | `modules/identity/` | **done (mock data)** - users, roles, permissions. See [[pages/modules/identity]] |
 | Dashboards | `mfe-dashboards` | `modules/dashboards/` | not started |
 | Management | `mfe-management` | `modules/management/` | not started |
@@ -112,6 +116,7 @@ Not retired, just not now:
 - **Backend integration.** All data and all auth are mocked in this phase - [[pages/decisions/0002-mock-first-auth-and-data]]. Swapping a mock for a real adapter is a DI binding change per port, tracked **per port** as each module lands, not as one cutover. First three ports on the board, all still mocked: `identity/UserRepository`, `identity/RoleRepository`, `identity/PermissionRepository` ([[pages/modules/identity]]).
 - **The cross-module event bus**, as above.
 - **Real identity provider wiring.** The legacy `core/auth/` stack is the reference implementation to port when mock auth is replaced. Phase 1 ported its *shape* only: `AuthStateService`, `authGuard` and `publicGuard` exist, `auth.interceptor.ts`, `tenant.interceptor.ts`, `token-refresh.service.ts` and `auth-event-listener.service.ts` do not, because there is no token to attach or refresh.
+- **The landing sections that had nothing behind them.** The legacy newsletter band is a form with no endpoint, and its "Start free trial" / "Contact sales" buttons pointed at `[routerLink]="[]"`. The newsletter section was dropped and the final call to action was repointed at `/auth/register` and `/auth/login`, so every control on the public page does something real. The legacy five-column link footer went the same way: twenty dead links replaced by the four destinations that exist. The typed.js headline animation and the vanta.js hero canvas are both dependencies with no consumer (root Rule C) - the theme's own gradient carries the hero instead, shared with the auth screens as `.hero-section.themed-backdrop` in `src/styles.scss`.
 - **The shell chrome the mock cannot support.** Deliberately not ported from `layouts/`: the theme customizer and the offcanvas drawer (`@ng-bootstrap`), the notification dropdown and virtual assistant (both need a backend), the vanta.js auth background, and the simplebar custom scrollbar. Each is a dependency with no consumer today, per root Rule C. The alternate theme stylesheets under `assets/css/` were copied so the theme switcher can be revived without a second asset pass.
 
 ## Related

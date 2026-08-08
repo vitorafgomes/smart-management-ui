@@ -20,4 +20,13 @@ export interface Credentials {
   readonly password: string;
 }
 
+export interface Registration {
+  readonly name: string;
+  readonly email: string;
+  readonly password: string;
+}
+
 export type LoginResult = { readonly ok: true } | { readonly ok: false; readonly reason: string };
+
+export type RegisterResult =
+  { readonly ok: true } | { readonly ok: false; readonly reason: string };

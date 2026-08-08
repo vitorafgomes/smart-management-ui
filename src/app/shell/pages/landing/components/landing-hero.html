@@ -1,0 +1,27 @@
+<section class="hero-section themed-backdrop position-relative overflow-hidden">
+  <div class="container" style="position: relative; z-index: 1">
+    <div class="row align-items-center">
+      <div class="col-sm-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6">
+        <h1
+          class="eye-catcher-text display-2 fw-700 mb-4 text-center text-md-start"
+          [attr.data-text]="headline"
+          data-testid="landing-headline"
+        >
+          {{ headline }}
+        </h1>
+
+        <p class="lead fw-bold text-center text-md-start mb-5">
+          Identity, sales, purchasing, inventory and finance in one place - with the numbers that
+          matter on the same screen as the work that produces them.
+        </p>
+
+        <div class="d-flex gap-3 justify-content-center justify-content-md-start">
+          <a routerLink="/auth/register" class="btn btn-primary btn-lg px-4 py-2">
+            Create account
+          </a>
+          <a routerLink="/auth/login" class="btn btn-outline-light btn-lg px-4 py-2">Sign in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

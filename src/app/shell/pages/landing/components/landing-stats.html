@@ -1,0 +1,19 @@
+<section class="stats-section">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="display-6 fw-700 mb-3">Transform your workflow</h2>
+      <p class="lead text-muted">What replacing nineteen separate tools actually buys you.</p>
+    </div>
+
+    <div class="row g-4 text-center">
+      @for (stat of stats; track stat.label) {
+        <div class="col-md-4">
+          <div class="stat-item">
+            <span class="stat-number">{{ stat.value }}</span>
+            <p class="text-muted mb-0">{{ stat.label }}</p>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
