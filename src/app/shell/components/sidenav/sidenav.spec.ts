@@ -42,9 +42,9 @@ describe('Sidenav', () => {
   });
 
   it('keeps a parent when one of its children matches', () => {
-    typeInFilter(fixture, 'tenants');
+    typeInFilter(fixture, 'permissions');
 
-    expect(renderedLabels(fixture)).toEqual(['Identity', 'Tenants']);
+    expect(renderedLabels(fixture)).toEqual(['Identity', 'Permissions']);
   });
 
   it('tells the user when nothing matches', () => {

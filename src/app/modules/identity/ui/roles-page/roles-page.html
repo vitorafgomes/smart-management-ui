@@ -1,0 +1,157 @@
+<div class="panel">
+  <div class="panel-hdr">
+    <h2>
+      Roles <span class="fw-300"><i>Management</i></span>
+    </h2>
+    <div class="panel-toolbar ms-auto">
+      <a class="btn btn-primary btn-sm" routerLink="new">New role</a>
+    </div>
+  </div>
+
+  <div class="panel-container show">
+    <div class="panel-content">
+      <div class="row align-items-center mb-3">
+        <div class="col-md-6">
+          <label class="form-label" for="role-search">Search</label>
+          <input
+            id="role-search"
+            type="search"
+            class="form-control form-control-sm"
+            placeholder="Search by name or description"
+            [value]="facade.search()"
+            (input)="onSearch($event)"
+          />
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+          <span class="panel-tag mb-0">{{ facade.totalResults() }} role(s) found</span>
+        </div>
+      </div>
+
+      @if (facade.error(); as message) {
+        <div class="alert alert-danger d-flex align-items-center" role="alert">
+          <div class="flex-grow-1" data-testid="roles-error">{{ message }}</div>
+          <button type="button" class="btn btn-outline-danger btn-sm ms-2" (click)="facade.load()">
+            Retry
+          </button>
+        </div>
+      }
+
+      @if (facade.loading()) {
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading roles</span>
+          </div>
+        </div>
+      } @else if (facade.isEmpty()) {
+        <p class="text-center text-muted py-5 mb-0">
+          @if (facade.isFiltered()) {
+            No roles match your search. Try a different term.
+          } @else {
+            No roles yet. Use "New role" to create the first one.
+          }
+        </p>
+      } @else if (!facade.error()) {
+        <div class="frame-wrap">
+          <table class="table table-hover table-bordered m-0" data-testid="roles-table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Description</th>
+                <th scope="col" class="text-center">Status</th>
+                <th scope="col" class="text-center">Permissions</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (role of facade.roles(); track role.id) {
+                <tr>
+                  <td class="fw-medium">
+                    {{ role.name }}
+                    @if (role.isDefault) {
+                      <span class="badge bg-info ms-1">Default</span>
+                    }
+                  </td>
+                  <td class="text-muted small">{{ role.description }}</td>
+                  <td class="text-center">
+                    @if (role.isActive) {
+                      <span class="badge bg-success">Active</span>
+                    } @else {
+                      <span class="badge bg-danger">Inactive</span>
+                    }
+                  </td>
+                  <td class="text-center">{{ role.permissionCodes.length }}</td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <a
+                        class="btn btn-outline-secondary"
+                        [routerLink]="[role.id]"
+                        [attr.aria-label]="'Edit ' + role.name"
+                      >
+                        Edit
+                      </a>
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger"
+                        [attr.aria-label]="'Delete ' + role.name"
+                        [disabled]="facade.removingId() === role.id"
+                        (click)="pendingDelete.set(role)"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (facade.totalPages() > 1) {
+          <app-identity-pager
+            [page]="facade.page()"
+            [totalPages]="facade.totalPages()"
+            [totalResults]="facade.totalResults()"
+            (pageChange)="facade.setPage($event)"
+          />
+        }
+      }
+    </div>
+  </div>
+</div>
+
+@if (pendingDelete(); as role) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal d-block fade show" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h6 mb-0">Delete role</h2>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Delete <strong>{{ role.name }}</strong
+            >? This cannot be undone.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            (click)="pendingDelete.set(null)"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger btn-sm"
+            data-testid="confirm-delete"
+            [disabled]="facade.removingId() !== null"
+            (click)="confirmDelete()"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

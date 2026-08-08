@@ -1,0 +1,156 @@
+<div class="panel">
+  <div class="panel-hdr">
+    <h2>
+      Users <span class="fw-300"><i>Management</i></span>
+    </h2>
+    <div class="panel-toolbar ms-auto">
+      <a class="btn btn-primary btn-sm" routerLink="new">New user</a>
+    </div>
+  </div>
+
+  <div class="panel-container show">
+    <div class="panel-content">
+      <div class="row align-items-center mb-3">
+        <div class="col-md-6">
+          <label class="form-label" for="user-search">Search</label>
+          <input
+            id="user-search"
+            type="search"
+            class="form-control form-control-sm"
+            placeholder="Search by username, email or name"
+            [value]="facade.search()"
+            (input)="onSearch($event)"
+          />
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+          <span class="panel-tag mb-0" data-testid="user-count">
+            {{ facade.totalResults() }} user(s) found
+          </span>
+        </div>
+      </div>
+
+      @if (facade.error(); as message) {
+        <div class="alert alert-danger d-flex align-items-center" role="alert">
+          <div class="flex-grow-1" data-testid="users-error">{{ message }}</div>
+          <button type="button" class="btn btn-outline-danger btn-sm ms-2" (click)="facade.load()">
+            Retry
+          </button>
+        </div>
+      }
+
+      @if (facade.loading()) {
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading users</span>
+          </div>
+        </div>
+      } @else if (facade.isEmpty()) {
+        <p class="text-center text-muted py-5 mb-0" data-testid="users-empty">
+          @if (facade.isFiltered()) {
+            No users match your search. Try a different term.
+          } @else {
+            No users yet. Use "New user" to create the first one.
+          }
+        </p>
+      } @else if (!facade.error()) {
+        <div class="frame-wrap">
+          <table class="table table-hover table-bordered m-0" data-testid="users-table">
+            <thead>
+              <tr>
+                <th scope="col">Username</th>
+                <th scope="col">Email</th>
+                <th scope="col">Name</th>
+                <th scope="col" class="text-center">Status</th>
+                <th scope="col">Roles</th>
+                <th scope="col" class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of facade.users(); track user.id) {
+                <tr>
+                  <td class="fw-medium">{{ user.userName }}</td>
+                  <td>{{ user.email }}</td>
+                  <td>{{ fullName(user) }}</td>
+                  <td class="text-center">
+                    @if (user.isActive) {
+                      <span class="badge bg-success">Active</span>
+                    } @else {
+                      <span class="badge bg-danger">Inactive</span>
+                    }
+                  </td>
+                  <td class="text-muted small">{{ user.roleIds.length }}</td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <a
+                        class="btn btn-outline-secondary"
+                        [routerLink]="[user.id]"
+                        [attr.aria-label]="'Edit ' + user.userName"
+                      >
+                        Edit
+                      </a>
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger"
+                        [attr.aria-label]="'Delete ' + user.userName"
+                        [disabled]="facade.removingId() === user.id"
+                        (click)="pendingDelete.set(user)"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (facade.totalPages() > 1) {
+          <app-identity-pager
+            [page]="facade.page()"
+            [totalPages]="facade.totalPages()"
+            [totalResults]="facade.totalResults()"
+            (pageChange)="facade.setPage($event)"
+          />
+        }
+      }
+    </div>
+  </div>
+</div>
+
+@if (pendingDelete(); as user) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal d-block fade show" tabindex="-1" role="dialog" aria-modal="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h6 mb-0">Delete user</h2>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            Delete <strong>{{ user.userName }}</strong
+            >? This cannot be undone.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm"
+            (click)="pendingDelete.set(null)"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger btn-sm"
+            data-testid="confirm-delete"
+            [disabled]="facade.removingId() !== null"
+            (click)="confirmDelete()"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

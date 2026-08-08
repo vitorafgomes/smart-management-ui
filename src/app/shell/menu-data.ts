@@ -14,10 +14,10 @@ export const MOCK_MENU: readonly MenuItem[] = [
   {
     label: 'Identity',
     icon: icon('users'),
-    badge: { variant: 'info', text: 'Phase 2' },
     children: [
-      { label: 'Users', isDisabled: true },
-      { label: 'Tenants', isDisabled: true },
+      { label: 'Users', url: '/identity/users' },
+      { label: 'Roles', url: '/identity/roles' },
+      { label: 'Permissions', url: '/identity/permissions' },
     ],
   },
   {

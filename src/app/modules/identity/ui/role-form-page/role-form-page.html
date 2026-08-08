@@ -1,0 +1,120 @@
+<div class="panel">
+  <div class="panel-hdr">
+    <h2>{{ title() }}</h2>
+  </div>
+
+  <div class="panel-container show">
+    <div class="panel-content">
+      @if (facade.detailLoading()) {
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading role</span>
+          </div>
+        </div>
+      } @else if (facade.detailError(); as message) {
+        <div class="alert alert-danger" role="alert" data-testid="role-detail-error">
+          {{ message }}
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" routerLink="../">Back to roles</a>
+      } @else {
+        @if (facade.saveError(); as message) {
+          <div class="alert alert-danger" role="alert" data-testid="role-save-error">
+            {{ message }}
+          </div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="role-name">Name</label>
+              <input
+                id="role-name"
+                type="text"
+                class="form-control"
+                formControlName="name"
+                [class.is-invalid]="isInvalid('name')"
+              />
+              @if (isInvalid('name')) {
+                <div class="invalid-feedback">Enter at least two characters.</div>
+              }
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="role-description">Description</label>
+              <input
+                id="role-description"
+                type="text"
+                class="form-control"
+                formControlName="description"
+              />
+            </div>
+
+            <div class="col-12 d-flex gap-4">
+              <div class="form-check">
+                <input
+                  id="role-active"
+                  type="checkbox"
+                  class="form-check-input"
+                  formControlName="isActive"
+                />
+                <label class="form-check-label" for="role-active">Active</label>
+              </div>
+              <div class="form-check">
+                <input
+                  id="role-default"
+                  type="checkbox"
+                  class="form-check-input"
+                  formControlName="isDefault"
+                />
+                <label class="form-check-label" for="role-default">
+                  Default role for new users
+                </label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <h3 class="h6">Permissions</h3>
+              @for (group of groupedPermissions(); track group.module) {
+                <fieldset class="mb-3">
+                  <legend class="form-label mb-1">{{ group.module }}</legend>
+                  @for (permission of group.permissions; track permission.id) {
+                    <div class="form-check">
+                      <input
+                        type="checkbox"
+                        class="form-check-input"
+                        [id]="'permission-' + permission.id"
+                        [checked]="hasPermission(permission.code)"
+                        (change)="togglePermission(permission.code)"
+                      />
+                      <label class="form-check-label" [attr.for]="'permission-' + permission.id">
+                        {{ permission.name }}
+                        <code class="ms-1 text-muted">{{ permission.code }}</code>
+                      </label>
+                    </div>
+                  }
+                </fieldset>
+              } @empty {
+                <p class="text-muted">No permissions are available.</p>
+              }
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              data-testid="save-role"
+              [disabled]="facade.saving()"
+            >
+              @if (facade.saving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Save
+            </button>
+            <a class="btn btn-outline-secondary" routerLink="../">Cancel</a>
+          </div>
+        </form>
+      }
+    </div>
+  </div>
+</div>
