@@ -1,0 +1,117 @@
+.logo-blob-wrapper {
+  position: relative;
+}
+
+.logo-backdrop-inline {
+  --blob-1: #886ab5;
+  --blob-2: #a78bce;
+  --blob-3: rgba(255, 255, 255, 0.1);
+  --blob-4: rgba(255, 255, 255, 0.05);
+
+  width: 2.75rem;
+  height: 2.5rem;
+  position: relative;
+  opacity: 0.8;
+  flex-shrink: 0;
+  transition: all 750ms cubic-bezier(0.34, 1.25, 0.3, 1);
+}
+
+.logo-blob-wrapper:hover .logo-backdrop-inline {
+  opacity: 0.5;
+  transform: scale(1.1);
+  transition: all 150ms cubic-bezier(0.34, 1.25, 0.3, 1);
+}
+
+.blobs {
+  width: 100%;
+  height: 100%;
+
+  svg {
+    position: relative;
+    height: 100%;
+    z-index: 2;
+  }
+}
+
+.blob {
+  animation: rotate 25s infinite alternate ease-in-out;
+  transform-origin: 50% 50%;
+  opacity: 0.7;
+
+  path {
+    animation: rotate 5s infinite alternate cubic-bezier(0.45, 0.2, 0.55, 0.8);
+    transform-origin: 50% 50%;
+    transform: scale(0.8);
+    transition: fill 800ms ease;
+  }
+
+  &.alt {
+    animation-direction: alternate-reverse;
+    opacity: 0.3;
+  }
+}
+
+.blob-1 path {
+  fill: var(--blob-1);
+  filter: blur(1rem);
+}
+
+.blob-2 {
+  animation-duration: 18s;
+  animation-direction: alternate-reverse;
+
+  path {
+    fill: var(--blob-2);
+    animation-duration: 7s;
+    filter: blur(0.75rem);
+    transform: scale(0.78);
+  }
+
+  &.alt {
+    animation-direction: alternate;
+  }
+}
+
+.blob-3 {
+  animation-duration: 23s;
+
+  path {
+    fill: var(--blob-3);
+    animation-duration: 6s;
+    filter: blur(0.5rem);
+    transform: scale(0.76);
+  }
+}
+
+.blob-4 {
+  animation-duration: 31s;
+  animation-direction: alternate-reverse;
+  opacity: 0.9;
+
+  path {
+    fill: var(--blob-4);
+    animation-duration: 10s;
+    filter: blur(10rem);
+    transform: scale(0.5);
+  }
+
+  &.alt {
+    animation-direction: alternate;
+    opacity: 0.8;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.logo-text {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}

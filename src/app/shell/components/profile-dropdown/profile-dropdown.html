@@ -1,0 +1,36 @@
+<div class="dropdown">
+  <button
+    type="button"
+    class="btn-system no-arrow bg-transparent d-flex flex-shrink-0 align-items-center justify-content-center"
+    aria-label="Open profile menu"
+    [attr.aria-expanded]="open()"
+    (click)="toggle()"
+  >
+    <span
+      class="profile-initials rounded-circle d-flex align-items-center justify-content-center"
+      >{{ user()?.initials }}</span
+    >
+  </button>
+
+  <div class="dropdown-menu dropdown-menu-end dropdown-menu-animated" [class.show]="open()">
+    <div class="notification-header rounded-top mb-2">
+      <div class="d-flex flex-row align-items-center mt-1 mb-1 color-white">
+        <div class="info-card-text">
+          <div class="fs-lg text-truncate text-truncate-lg">{{ user()?.name }}</div>
+          <span class="text-truncate text-truncate-md opacity-80 fs-sm">{{ user()?.email }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dropdown-divider m-0"></div>
+
+    <button
+      type="button"
+      class="dropdown-item py-3 fw-500 text-danger"
+      data-testid="logout"
+      (click)="logout()"
+    >
+      Logout
+    </button>
+  </div>
+</div>

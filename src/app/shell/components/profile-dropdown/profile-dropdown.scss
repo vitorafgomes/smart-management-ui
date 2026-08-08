@@ -1,0 +1,11 @@
+/* SmartAdmin's .profile-image sizes an <img>; the mock user has initials instead of an avatar,
+   so the placeholder needs its own box to read as one. */
+.profile-initials {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--bs-body-color);
+  background-color: var(--bs-secondary-bg);
+}

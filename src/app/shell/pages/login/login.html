@@ -1,0 +1,44 @@
+<div class="row justify-content-center">
+  <div class="col-11 col-md-8 col-lg-6 col-xl-4">
+    <div class="login-card p-4 p-md-6 bg-dark bg-opacity-50 translucent-dark rounded-4">
+      <h2 class="text-center mb-4">Login</h2>
+      <p class="text-center text-white opacity-50 mb-4">
+        Authentication is mocked in this phase - any username and password will sign you in.
+      </p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        @if (error(); as message) {
+          <div class="alert alert-danger" role="alert" data-testid="login-error">{{ message }}</div>
+        }
+
+        <div class="mb-3">
+          <label for="username" class="form-label">Email or username</label>
+          <input
+            id="username"
+            type="text"
+            autocomplete="username"
+            formControlName="username"
+            class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            formControlName="password"
+            class="form-control form-control-lg text-white bg-dark border-light border-opacity-25 bg-opacity-25"
+          />
+        </div>
+
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn btn-primary btn-lg bg-primary bg-opacity-75">
+            Sign In
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

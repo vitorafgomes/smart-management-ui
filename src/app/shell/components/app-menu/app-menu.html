@@ -1,0 +1,92 @@
+<ul class="nav-menu d-flex">
+  @for (item of items(); track item.label) {
+    @if (item.isTitle) {
+      <li class="nav-title">
+        <span>{{ item.label }}</span>
+      </li>
+    } @else if (item.children) {
+      <li class="nav-item has-ul" [class.active]="hasActiveChild(item)">
+        <a
+          role="button"
+          tabindex="0"
+          [attr.aria-expanded]="isOpen(item)"
+          (click)="toggle(item)"
+          (keydown.enter)="toggle(item)"
+          (keydown.space)="toggle(item)"
+        >
+          @if (item.icon) {
+            <svg class="sa-icon" aria-hidden="true">
+              <use [attr.href]="item.icon"></use>
+            </svg>
+          }
+          <span class="nav-link-text">{{ item.label }}</span>
+          @if (item.badge) {
+            <span class="badge ms-auto me-4" [class]="'bg-' + item.badge.variant">{{
+              item.badge.text
+            }}</span>
+          }
+          <span class="collapse-sign">
+            <i class="sa sa-chevron-up"></i>
+          </span>
+        </a>
+        <div class="collapse" [class.show]="isOpen(item)">
+          <ul class="sub-menu d-flex">
+            @for (child of item.children; track child.label) {
+              <li [class.active]="isActive(child)">
+                @if (child.url) {
+                  <a
+                    [routerLink]="child.url"
+                    [class.active]="isActive(child)"
+                    [attr.data-active-link]="isActive(child)"
+                  >
+                    <span class="nav-link-text">{{ child.label }}</span>
+                  </a>
+                } @else {
+                  <a class="disabled" aria-disabled="true">
+                    <span class="nav-link-text">{{ child.label }}</span>
+                  </a>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      </li>
+    } @else {
+      <li [class.active]="isActive(item)">
+        @if (item.url) {
+          <a
+            [routerLink]="item.url"
+            [class.active]="isActive(item)"
+            [attr.data-active-link]="isActive(item)"
+          >
+            @if (item.icon) {
+              <svg class="sa-icon" aria-hidden="true">
+                <use [attr.href]="item.icon"></use>
+              </svg>
+            }
+            <span class="nav-link-text">{{ item.label }}</span>
+            @if (item.badge) {
+              <span class="badge ms-auto me-4" [class]="'bg-' + item.badge.variant">{{
+                item.badge.text
+              }}</span>
+            }
+          </a>
+        } @else {
+          <a class="disabled" aria-disabled="true">
+            @if (item.icon) {
+              <svg class="sa-icon" aria-hidden="true">
+                <use [attr.href]="item.icon"></use>
+              </svg>
+            }
+            <span class="nav-link-text">{{ item.label }}</span>
+            @if (item.badge) {
+              <span class="badge ms-auto me-4" [class]="'bg-' + item.badge.variant">{{
+                item.badge.text
+              }}</span>
+            }
+          </a>
+        }
+      </li>
+    }
+  }
+</ul>
