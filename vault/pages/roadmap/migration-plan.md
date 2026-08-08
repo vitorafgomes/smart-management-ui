@@ -44,7 +44,7 @@ The chrome every module renders inside; nothing module-specific.
 
 **Exit criteria:** app boots into the ported layout with mock auth gating routes; E2E smoke covers login-redirect and layout render; gates green.
 
-**Status: done, 2026-08-08.** All four gates green. The theme forced a deliberate budget change (initial 500 kB to 1 MB warning) - the SmartAdmin global CSS alone is 507 kB raw / 61 kB transferred, and it is the product's look, not accidental weight. What was consciously left out: everything in the ported chrome that needed a dependency with no consumer yet (`@ng-bootstrap` collapse/dropdown/offcanvas, simplebar, ngx-toastr, vanta.js) was re-expressed with signals or dropped, so the only new dependency is `bootstrap` for the sass the theme imports. See [[pages/migration/migration-status]].
+**Status: done, 2026-08-08.** All four gates green. The theme forced a deliberate budget change (initial 500 kB to 1 MB warning) - the SmartAdmin global CSS alone is 507 kB raw / 61 kB transferred, and it is the product's look, not accidental weight. What was consciously left out: everything in the ported chrome that needed a dependency with no consumer yet (`@ng-bootstrap` collapse/dropdown/offcanvas, simplebar, ngx-toastr) was re-expressed with signals or dropped, so the only new dependency at the time was `bootstrap` for the sass the theme imports. `vanta` and `three` were on that list and came back on 2026-08-08 - the animated hero backdrop turned out to be the look itself, not decoration, and it now loads as its own lazy chunk. See [[pages/migration/migration-status]].
 
 ## Phase 2 - First module: identity
 

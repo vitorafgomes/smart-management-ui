@@ -45,7 +45,8 @@
                 "output": "/assets"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": ["src/styles.scss"],
+            "allowedCommonJsDependencies": ["vanta/dist/vanta.halo.min"]
           },
           "configurations": {
             "production": {

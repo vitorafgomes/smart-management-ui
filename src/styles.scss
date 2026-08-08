@@ -6,9 +6,9 @@
 
 /* The landing gradient, lifted out of assets/sass/app/_landing.scss where the theme scopes it
    to `.app-landing`, so the landing hero and the auth screens can share one backdrop. The
-   custom properties it reads are declared on `:root` by that same file. Upstream paints a
-   vanta.js canvas over this gradient; that dependency is deliberately not ported
-   (vault/pages/migration/migration-status.md), so the gradient carries the look on its own.
+   custom properties it reads are declared on `:root` by that same file. It is what the hero
+   shows before `app-background-animation` finishes fetching three.js and paints the vanta
+   canvas over it - and what it keeps showing if that fetch never lands.
 
    The selector names `.hero-section` because it has to: the theme sets a flat `#333333` on
    `.app-landing .hero-section`, and a lone class would lose that specificity contest. Both

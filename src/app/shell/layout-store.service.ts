@@ -2,8 +2,28 @@ import { DOCUMENT, effect, inject, Injectable, signal } from '@angular/core';
 
 export type LayoutTheme = 'light' | 'dark';
 
+/**
+ * The alternate palettes shipped under assets/css/. `default` is the theme compiled into
+ * styles.scss and needs no stylesheet of its own.
+ */
+export const LAYOUT_SKINS = [
+  'default',
+  'nebula',
+  'olive',
+  'solar',
+  'lunar',
+  'night',
+  'aurora',
+  'earth',
+  'flare',
+  'storm',
+] as const;
+
+export type LayoutSkin = (typeof LAYOUT_SKINS)[number];
+
 export interface LayoutState {
   readonly theme: LayoutTheme;
+  readonly skin: LayoutSkin;
   readonly navMinified: boolean;
   readonly darkNavigation: boolean;
 }
@@ -12,9 +32,13 @@ const STORAGE_KEY = 'smart-management-layout';
 
 const INITIAL_STATE: LayoutState = {
   theme: 'light',
+  skin: 'default',
   navMinified: false,
   darkNavigation: true,
 };
+
+/** The `<link>` index.html parks in <body> for the skin stylesheet to be swapped into. */
+const THEME_LINK_ID = 'app-theme';
 
 /** SmartAdmin drives layout variants off classes on <html>; these are the ones the shell uses. */
 const STATE_CLASSES = {
@@ -48,6 +72,7 @@ export class LayoutStoreService {
       root.classList.toggle(STATE_CLASSES.navMinified, state.navMinified);
       root.classList.toggle(STATE_CLASSES.darkNavigation, state.darkNavigation);
 
+      this.applySkin(state.skin);
       writeStoredState(state);
     });
 
@@ -61,6 +86,10 @@ export class LayoutStoreService {
       ...state,
       theme: state.theme === 'light' ? 'dark' : 'light',
     }));
+  }
+
+  setSkin(skin: LayoutSkin): void {
+    this._state.update((state) => ({ ...state, skin }));
   }
 
   toggleNavMinified(): void {
@@ -79,12 +108,42 @@ export class LayoutStoreService {
     this._state.set(INITIAL_STATE);
     this._mobileMenuOpen.set(false);
   }
+
+  /**
+   * Upstream blanks the href on the default skin, which leaves the link pointing at the document
+   * itself and the browser fetching the page as a stylesheet. Dropping the attribute instead is
+   * the same result on screen without the wasted request.
+   */
+  private applySkin(skin: LayoutSkin): void {
+    const link = this.document.getElementById(THEME_LINK_ID) as HTMLLinkElement | null;
+    if (!link) {
+      return;
+    }
+
+    if (skin === 'default') {
+      link.removeAttribute('href');
+      return;
+    }
+
+    const href = `/assets/css/${skin}.css`;
+    if (link.getAttribute('href') !== href) {
+      link.setAttribute('href', href);
+    }
+  }
 }
 
 function readStoredState(): LayoutState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...INITIAL_STATE, ...(JSON.parse(raw) as Partial<LayoutState>) } : INITIAL_STATE;
+    if (!raw) {
+      return INITIAL_STATE;
+    }
+
+    const stored = { ...INITIAL_STATE, ...(JSON.parse(raw) as Partial<LayoutState>) };
+
+    // The skin ends up in a stylesheet URL, and storage is editable by hand, so it is checked
+    // against the list rather than trusted.
+    return LAYOUT_SKINS.includes(stored.skin) ? stored : { ...stored, skin: 'default' };
   } catch {
     return INITIAL_STATE;
   }
