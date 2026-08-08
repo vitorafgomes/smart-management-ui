@@ -1,3 +1,5 @@
+## [2026-08-08] ingest | Company logo blob restored on landing and auth navbars; landing reference corrected to mfe-identity-tenant
+
 ## [2026-08-08] ingest | Landing visual fidelity restored: vanta hero, app-theme mechanism, missing assets
 
 ## [2026-08-08] ingest | Landing page and mock registration landed; public home replaces login redirect

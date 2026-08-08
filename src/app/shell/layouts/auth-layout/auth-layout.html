@@ -1,6 +1,11 @@
 <nav class="navbar navbar-expand-lg navbar-dark position-fixed w-100 py-3" style="z-index: 1000">
   <div class="container">
-    <a class="navbar-brand fw-bold text-white fs-4" routerLink="/">{{ appName }}</a>
+    <app-app-logo
+      class="navbar-brand"
+      link="/"
+      [brandMain]="brandMain"
+      [brandSecondary]="brandSecondary"
+    />
 
     <div class="ms-auto d-flex gap-2">
       <a routerLink="/auth/login" class="btn btn-link text-white border-0 text-decoration-none">

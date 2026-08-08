@@ -33,6 +33,20 @@ test.describe('shell and mock auth', () => {
     await expect(page.getByTestId('navbar-register')).toBeVisible();
   });
 
+  test('carries the animated company logo in the landing and auth navbars', async ({ page }) => {
+    await page.goto('/');
+
+    const landingLogo = page.locator('app-landing-navbar app-app-logo');
+    await expect(landingLogo).toContainText('Chiacho & Gomes');
+    await expect(landingLogo.locator('.blobs svg')).toBeVisible();
+
+    await page.goto('/auth/login');
+
+    const authLogo = page.locator('app-auth-layout app-app-logo');
+    await expect(authLogo).toContainText('Chiacho & Gomes');
+    await expect(authLogo.locator('.blobs svg')).toBeVisible();
+  });
+
   test('paints the animated hero backdrop on the landing page', async ({ page }) => {
     await page.goto('/');
 
