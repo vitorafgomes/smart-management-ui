@@ -42,6 +42,7 @@ Pages arrive as the project grows. The architectural shape itself is recorded as
 - [[pages/conventions/correlation-id]] — `X-Session-Id` and `X-Correlation-Id`, attached by one shared-kernel interceptor.
 - [[pages/conventions/testing]] — what must have a Vitest spec, how specs are written per layer, and the planned Playwright smoke suite.
 - [[pages/conventions/deployment]] — Cloudflare Workers static assets only: push to `main` triggers Workers Builds, `wrangler.jsonc` is the single source of deploy config. No Docker, no Helm.
+- [[pages/conventions/dependency-security]] — supply-chain gate: what it takes for a package to enter the project; CI blocks high/critical runtime advisories.
 
 ## Invariants
 
