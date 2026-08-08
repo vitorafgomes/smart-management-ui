@@ -1,3 +1,5 @@
+## [2026-08-08] ingest | Dependency security policy: Rule I, supply-chain convention, CI audit gate
+
 ## [2026-08-08] crystallize | Atom logo mark (independent white rings, highlighted primary) and smooth route transitions (view transitions + preload-all) shipped
 
 ## [2026-08-08] ingest | Company logo blob restored on landing and auth navbars; landing reference corrected to mfe-identity-tenant

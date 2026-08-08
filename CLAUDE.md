@@ -92,6 +92,10 @@ Two more invariants follow from the same decision: state is signals-first ([[vau
 
 **Enforced since Phase 0.** `angular-eslint` + `eslint-plugin-boundaries`, the `tsconfig` path mapping, and the correlation interceptor with its pinning spec are all in place and run in CI. `src/app/modules/` is still empty, so the boundary rules currently hold vacuously — but they were proven to fire against deliberate violations before landing, so the first module is governed from its first commit rather than setting a precedent nobody checked. The one invariant that stays review-only is signals-first state ([[vault/pages/invariants/state-is-signals-first]]): every version of that violation depends on what the state means, not on which file imports which.
 
+### Rule I — Dependency discipline: security first
+
+**Adding a package is a security decision, not a convenience.** Before any `npm i`: necessity (Rule C — can ~30 lines of ours do it?), provenance (exact name verified, real maintainer/repo), health (maintained, adopted, no open advisories), transitive surface, install scripts read if any, and `npm audit` clean of new high/critical findings afterwards. The answers go in the PR that adds the package. Lockfile committed and installed with `npm ci`; dependabot bumps are consolidated with a regenerated lockfile, never merged blind; CI blocks on `npm audit --omit=dev --audit-level=high`. The full gate: [[vault/pages/conventions/dependency-security]].
+
 ## Model routing
 
 Which model does what. Applies to me and to every subagent I spawn.

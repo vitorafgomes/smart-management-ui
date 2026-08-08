@@ -25,6 +25,9 @@ jobs:
       - name: Prettier check
         run: npx prettier --check .
 
+      - name: Dependency audit (runtime, high+)
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Build
         run: npm run build
 
