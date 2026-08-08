@@ -1,22 +1,22 @@
 ---
 title: "Angular best practices"
-version: "1.1"
+version: "1.2"
 date: 2026-08-08
-changes: "Phase 1: added the rules for porting legacy templates onto the ported theme"
+changes: "Added the navigation smoothness defaults: view transitions and preload-all"
 page_type: convention
 status: active
 description: "Official angular.dev guidance adopted as house rules for smart-management-ui, with notes on what lint will enforce."
 source:
   - chat
 reliability: high
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # Angular best practices
 
 The current Angular guidance from angular.dev, adopted as house rules. This is the checklist referenced from root `CLAUDE.md` Rule B step 3.
 
-The repo is Angular 22, standalone, zoneless-friendly, no SSR. Everything below is the **target**; the codebase is still the scaffold, and no ESLint is installed yet.
+The repo is Angular 22, standalone, zoneless-friendly, no SSR. Since Phase 0, `angular-eslint` enforces the mechanically checkable subset of these rules (including template accessibility) and the `smart-reviewer` gate covers the rest.
 
 ## Components
 
@@ -103,6 +103,10 @@ One place to read all host behaviour beats decorators scattered through the clas
 ## State
 
 Signals for state, `computed()` for derivation, `effect()` sparingly and never as a way to write state that a `computed()` could derive. Full rules in [[pages/conventions/signals-state]]; the short version is that `computed()` is the default and an `effect()` that assigns to a signal is usually a design smell.
+
+## Navigation
+
+The router runs with `withViewTransitions()` and `withPreloading(PreloadAllModules)` (see `app.config.ts`): route changes cross-fade instead of repainting cold, and lazy chunks download in the background after boot so the first click into a lazy route has no blank gap. Both are progressive enhancements - browsers without the View Transitions API and users with `prefers-reduced-motion` get the instant swap. Do not remove either without an ADR; do not add per-route spinner screens for chunk loading that preloading already solves.
 
 ## Forms
 
