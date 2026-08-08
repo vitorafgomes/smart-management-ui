@@ -56,6 +56,8 @@ The chrome every module renders inside; nothing module-specific.
 
 **Exit criteria:** identity usable end-to-end on mock data; gates green; a retro updates the conventions with what the port taught us before any second module starts.
 
+**Status: code done, 2026-08-08; retro pending user checkpoint.** All four gates green (lint clean, build zero errors and zero warnings, 109 unit specs, 11 E2E). Scope landed: users, roles and the permission catalogue - the three surfaces the legacy module actually had screens for. The legacy `presentation/auth/` screens were **not** ported (the shell has owned that surface since Phase 1), and the legacy entities with no screen behind them were left in place rather than ported as dead code. The layer split was mechanical as predicted; the rework was where predicted too, plus two things the plan did not anticipate - domain purity forces the ports to be promise-based and pushes the DI tokens into `application/`. See [[pages/modules/identity]]. **The convention-page edits the retro proposes are not yet applied** - that is the user checkpoint below.
+
 ## Phase 3+ - Module waves
 
 One module (or coherent group) per wave, order decided with the user at each checkpoint - business priority beats technical convenience. Standing sequence principles:

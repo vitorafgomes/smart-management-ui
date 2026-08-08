@@ -1,0 +1,28 @@
+<div>
+  <h1 class="subheader-title mb-2">Identity</h1>
+
+  <nav class="app-breadcrumb" aria-label="Breadcrumb">
+    <ol class="breadcrumb ms-0 text-muted mb-0">
+      <li class="breadcrumb-item">Settings</li>
+      <li class="breadcrumb-item active" aria-current="page">Access control</li>
+    </ol>
+  </nav>
+
+  <h6 class="mt-3 mb-4 fst-italic">Manage users, roles and permissions for this tenant.</h6>
+</div>
+
+<div class="main-content">
+  <ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+      <a class="nav-link" routerLink="users" routerLinkActive="active">Users</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="roles" routerLinkActive="active">Roles</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" routerLink="permissions" routerLinkActive="active">Permissions</a>
+    </li>
+  </ul>
+
+  <router-outlet />
+</div>

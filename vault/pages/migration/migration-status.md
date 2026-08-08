@@ -1,8 +1,8 @@
 ---
 title: "Migration status"
-version: "1.2"
+version: "1.3"
 date: 2026-08-08
-changes: "Phase 1 landed: shell chrome, theming, mock auth/tenant, error handler, toasts"
+changes: "Phase 2 landed: identity module on mock data; auth screens stay shell-owned"
 page_type: roadmap
 status: active
 description: "Module map from the legacy micro frontends to target modules, with per area status and cross cutting porting work."
@@ -16,9 +16,11 @@ updated: 2026-08-08
 
 The tracker for moving the legacy micro-frontend app into this repository's modular monolith. Source app: [[pages/migration/legacy-source-overview]]. Target shape: [[pages/decisions/0001-modular-monolith-architecture]].
 
-**No bounded-context module is migrated.** Every row in the module map below `shell` is `not started`. What has moved is the chrome: since Phase 1 the app boots into the ported SmartAdmin layout behind a mock auth guard, so it no longer looks like the Angular scaffold - but nothing business-facing has been ported.
+**One bounded-context module is migrated.** `identity` landed in Phase 2 on mock data ([[pages/modules/identity]]); every other row in the module map below `shell` is still `not started`. The chrome moved in Phase 1: the app boots into the ported SmartAdmin layout behind a mock auth guard.
 
 > **Phase 0 (enforcement foundation) landed on 2026-08-08.** It deliberately ports no feature: what it delivers is the tooling that makes the architecture self-enforcing before the first module is written - `angular-eslint` + `eslint-plugin-boundaries` with the layer and module rules proven to fire against deliberate violations, the `tsconfig` path mapping, the correlation interceptor and its pinning spec, a Playwright boot smoke test, and a GitHub Actions pipeline running lint, build, unit and E2E on every PR. The only cross-cutting row below that moves as a result is observability and correlation. See [[pages/roadmap/migration-plan]].
+
+> **Phase 2 (first module: identity) landed on 2026-08-08.** `modules/identity/` holds the users, roles and permission-catalogue surfaces from `mfe-identity-tenant`, on in-memory mock adapters. **The legacy module's auth screens were deliberately not ported** - login, register, forgot-password, two-factor and lock-screen, plus its Keycloak auth service, all duplicate a surface `shared-kernel/auth/` and `shell/pages/login/` already own since Phase 1, so authentication stays shell-owned. The legacy entities and repositories with no screen behind them (tenants, subscriptions, tenant settings, branding, company profiles, audit logs, groups) were left behind rather than ported as dead code. Full detail, including the mock failure seam: [[pages/modules/identity]].
 
 > **Phase 1 (shell and theming) landed on 2026-08-08.** The SmartAdmin sass, webfonts, icon sprite and imagery are in `src/assets/` and compile through `src/styles.scss`; the main and auth layouts, topbar, sidenav, menu, logo and footer are ported into `src/app/shell/` as standalone OnPush components on signals and native control flow; `shared-kernel/` gained mock auth with both guards, mock tenant storage, the global error handler and a signals-based toast service with its outlet. Everything auth- and menu-shaped is a **mock** per [[pages/decisions/0002-mock-first-auth-and-data]] - the rows below that say `done` mean the seam exists and the chrome renders against it, not that anything talks to a backend.
 
@@ -37,7 +39,7 @@ Update the status column here as each module lands, and add its own `pages/modul
 | Legacy area | Legacy project | Target module | Status |
 |---|---|---|---|
 | Shell layout, nav, chrome | `projects/shell` (`layouts/`, `views/`, `components/`) | `src/app/shell/` | done (chrome only) |
-| Identity, tenants, users, admin | `mfe-identity-tenant` | `modules/identity/` | not started |
+| Identity, tenants, users, admin | `mfe-identity-tenant` | `modules/identity/` | **done (mock data)** - users, roles, permissions. See [[pages/modules/identity]] |
 | Dashboards | `mfe-dashboards` | `modules/dashboards/` | not started |
 | Management | `mfe-management` | `modules/management/` | not started |
 | Master data | `mfe-master-data` | `modules/master-data/` | not started |
@@ -107,7 +109,7 @@ Deployment is exclusively Cloudflare Workers static assets: [[pages/conventions/
 
 Not retired, just not now:
 
-- **Backend integration.** All data and all auth are mocked in this phase - [[pages/decisions/0002-mock-first-auth-and-data]]. Swapping a mock for a real adapter is a DI binding change per port, tracked **per port** as each module lands, not as one cutover.
+- **Backend integration.** All data and all auth are mocked in this phase - [[pages/decisions/0002-mock-first-auth-and-data]]. Swapping a mock for a real adapter is a DI binding change per port, tracked **per port** as each module lands, not as one cutover. First three ports on the board, all still mocked: `identity/UserRepository`, `identity/RoleRepository`, `identity/PermissionRepository` ([[pages/modules/identity]]).
 - **The cross-module event bus**, as above.
 - **Real identity provider wiring.** The legacy `core/auth/` stack is the reference implementation to port when mock auth is replaced. Phase 1 ported its *shape* only: `AuthStateService`, `authGuard` and `publicGuard` exist, `auth.interceptor.ts`, `tenant.interceptor.ts`, `token-refresh.service.ts` and `auth-event-listener.service.ts` do not, because there is no token to attach or refresh.
 - **The shell chrome the mock cannot support.** Deliberately not ported from `layouts/`: the theme customizer and the offcanvas drawer (`@ng-bootstrap`), the notification dropdown and virtual assistant (both need a backend), the vanta.js auth background, and the simplebar custom scrollbar. Each is a dependency with no consumer today, per root Rule C. The alternate theme stylesheets under `assets/css/` were copied so the theme switcher can be revived without a second asset pass.

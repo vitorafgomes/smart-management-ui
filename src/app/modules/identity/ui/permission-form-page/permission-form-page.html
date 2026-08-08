@@ -1,0 +1,118 @@
+<div class="panel">
+  <div class="panel-hdr">
+    <h2>{{ title() }}</h2>
+  </div>
+
+  <div class="panel-container show">
+    <div class="panel-content">
+      @if (facade.detailLoading()) {
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading permission</span>
+          </div>
+        </div>
+      } @else if (facade.detailError(); as message) {
+        <div class="alert alert-danger" role="alert" data-testid="permission-detail-error">
+          {{ message }}
+        </div>
+        <a class="btn btn-outline-secondary btn-sm" routerLink="../">Back to permissions</a>
+      } @else {
+        @if (facade.saveError(); as message) {
+          <div class="alert alert-danger" role="alert" data-testid="permission-save-error">
+            {{ message }}
+          </div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="permission-code">Code</label>
+              <input
+                id="permission-code"
+                type="text"
+                class="form-control"
+                placeholder="USER_READ"
+                formControlName="code"
+                [class.is-invalid]="isInvalid('code')"
+              />
+              @if (isInvalid('code')) {
+                <div class="invalid-feedback">
+                  Use uppercase letters, digits and underscores, for example USER_READ.
+                </div>
+              }
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="permission-name">Name</label>
+              <input
+                id="permission-name"
+                type="text"
+                class="form-control"
+                formControlName="name"
+                [class.is-invalid]="isInvalid('name')"
+              />
+              @if (isInvalid('name')) {
+                <div class="invalid-feedback">Enter at least two characters.</div>
+              }
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label" for="permission-form-module">Module</label>
+              <select
+                id="permission-form-module"
+                class="form-select"
+                formControlName="module"
+                [class.is-invalid]="isInvalid('module')"
+              >
+                <option value="">Select a module</option>
+                @for (module of modules; track module) {
+                  <option [value]="module">{{ module }}</option>
+                }
+              </select>
+              @if (isInvalid('module')) {
+                <div class="invalid-feedback">Choose the module this permission belongs to.</div>
+              }
+            </div>
+
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check">
+                <input
+                  id="permission-active"
+                  type="checkbox"
+                  class="form-check-input"
+                  formControlName="isActive"
+                />
+                <label class="form-check-label" for="permission-active">Active</label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label" for="permission-description">Description</label>
+              <textarea
+                id="permission-description"
+                rows="2"
+                class="form-control"
+                formControlName="description"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              data-testid="save-permission"
+              [disabled]="facade.saving()"
+            >
+              @if (facade.saving()) {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+              }
+              Save
+            </button>
+            <a class="btn btn-outline-secondary" routerLink="../">Cancel</a>
+          </div>
+        </form>
+      }
+    </div>
+  </div>
+</div>

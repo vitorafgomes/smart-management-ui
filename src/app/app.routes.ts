@@ -24,6 +24,10 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'dashboard', component: Dashboard, title: 'Dashboard' },
+      {
+        path: 'identity',
+        loadChildren: () => import('@modules/identity').then((m) => m.identityRoutes),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

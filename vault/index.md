@@ -1,12 +1,12 @@
 ---
 title: "Smart Management UI Vault Index"
-version: "1.2"
-date: 2026-08-07
-changes: "Added migration section, deployment convention and ADR 0002"
+version: "1.3"
+date: 2026-08-08
+changes: "Phase 2: identity module page listed"
 page_type: index
 status: active
 description: "Content catalogue for the smart-management-ui LLM wiki."
-updated: 2026-08-07
+updated: 2026-08-08
 ---
 
 # Smart Management UI Vault Index
@@ -17,7 +17,7 @@ The content catalogue for this vault. Start here, follow wikilinks. If the vault
 - Page schema: [[wiki-schema]] | Config: [[wiki-config]]
 - Templates: `templates/`
 
-> **Coverage note (2026-08-07):** the vault now documents the **accepted target architecture** ([[pages/decisions/0001-modular-monolith-architecture]]) and the conventions and invariants that follow from it. **None of it is implemented yet** — the repository holds the plain Angular 22 scaffold, and the enforcement described on those pages (eslint boundaries, the correlation interceptor, the Playwright smoke suite) lands with the first implementation PR. Everything else remains unpopulated; work from the root `CLAUDE.md` Rules A–H plus the source, and crystallize what you learn back here.
+> **Coverage note (2026-08-08):** the target architecture ([[pages/decisions/0001-modular-monolith-architecture]]) is now **implemented and enforced**, not just documented. Phase 0 landed the eslint boundary rules, the `tsconfig` mapping, the correlation interceptor and CI; Phase 1 landed the shell and theming; Phase 2 landed the first module, [[pages/modules/identity]], which is where to look for a worked example of the conventions rather than reading them cold. Data and auth are still mocked ([[pages/decisions/0002-mock-first-auth-and-data]]). Anything not yet covered here: work from the root `CLAUDE.md` Rules A–H plus the source, and crystallize what you learn back.
 
 ## Migration
 
@@ -53,7 +53,9 @@ Pages arrive as the project grows. The architectural shape itself is recorded as
 
 ## Modules
 
-One page per bounded-context module under `src/app/modules/`. **No module is implemented yet** — the first module page arrives with the first implemented module, which will be a port from the legacy app ([[pages/migration/migration-status]] holds the map). Until then, the structure a module must follow is defined in [[pages/conventions/modular-architecture]].
+One page per bounded-context module under `src/app/modules/`. The structure every module follows is [[pages/conventions/modular-architecture]]; the map of what is still to come is [[pages/migration/migration-status]].
+
+- [[pages/modules/identity]] — users, roles and the permission catalogue, ported from `mfe-identity-tenant` in Phase 2. Runs entirely on in-memory mock adapters and is the first module to inhabit the architecture; authentication stays shell-owned.
 
 ## Incidents
 
