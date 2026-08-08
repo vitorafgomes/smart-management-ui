@@ -17,7 +17,9 @@ export class Sidenav {
   protected readonly loading = this.menu.loading;
   protected readonly filterText = signal('');
 
-  protected readonly filteredItems = computed(() => filterMenu(this.menu.items(), this.filterText()));
+  protected readonly filteredItems = computed(() =>
+    filterMenu(this.menu.items(), this.filterText()),
+  );
   protected readonly hasResults = computed(() => this.filteredItems().length > 0);
   protected readonly isFiltering = computed(() => this.filterText().trim().length > 0);
 

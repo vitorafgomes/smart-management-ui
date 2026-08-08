@@ -1,8 +1,8 @@
 ---
 title: "Modular architecture convention"
-version: "1.2"
+version: "1.3"
 date: 2026-08-08
-changes: "Phase 0: enforcement is live, tsconfig wildcard shape, per-module chores removed"
+changes: "Phase 2 retro: ports are promise-based, InjectionToken lives in application/, route table splits between ui/*.routes.ts and index.ts"
 page_type: convention
 status: active
 description: "Folder layout, layer dependency rules, import examples, and the checklist for adding a bounded-context module."
@@ -72,6 +72,12 @@ The two rules behind the table: dependencies run **ui to application to domain**
 
 `domain/user-repository.ts` declares the interface. `infrastructure/http-user-repository.ts` implements it. `application/user-facade.ts` injects the interface through an `InjectionToken`, and the module's route providers bind token to implementation. The facade never names the HTTP class, which is what makes it testable against a fake - see [[pages/conventions/testing]].
 
+Three things about that arrangement that are easy to get wrong:
+
+- **Ports are promise-based.** `domain/` imports no RxJS - a single-value request is exactly what a `Promise` is for, and an `Observable`-typed port cannot compile in this layer at all. If a port method needs to return a stream, it does not belong in `domain/`.
+- **The `InjectionToken` lives in `application/`, not `domain/`.** It is an Angular value, so it cannot sit beside the interface it resolves without pulling Angular into `domain/`. The interface in `domain/` is the contract; the token in `application/` is only the DI handle for that contract - see `modules/identity/application/identity-ports.ts` for the shape.
+- **The route table splits in two.** `ui/<context>.routes.ts` holds the screen routes and the facade providers. The port-to-adapter bindings live in `index.ts`, which wraps those routes in a parent route carrying the adapter providers - `ui` may not name an adapter, and the lint config enforces that directly.
+
 ## Imports: right and wrong
 
 **Right - cross-module through the public API:**
@@ -128,8 +134,8 @@ Compile failure is not the only guard, because a `tsconfig` that fails to resolv
 3. Write `domain/` first: models and the port interfaces. Pure TypeScript, no framework imports.
 4. Write `application/` facades against the ports, state as signals per [[pages/conventions/signals-state]].
 5. Write `infrastructure/` adapters implementing the ports. Typed responses; failures handled at this boundary per root Rule G. No hand-added correlation headers - the interceptor owns those, see [[pages/conventions/correlation-id]].
-6. Write `ui/` as standalone `OnPush` components plus the module's lazy route table, following [[pages/conventions/angular-best-practices]].
-7. Write `index.ts` exporting **only** what the outside genuinely needs: public types, the route provider, the DI providers. If a symbol is exported "just in case", delete it.
+6. Write `ui/` as standalone `OnPush` components plus `ui/<context>.routes.ts` holding the screen routes and the facade providers, following [[pages/conventions/angular-best-practices]].
+7. Write `index.ts` exporting **only** what the outside genuinely needs: public types, and the route provider - which wraps `ui/<context>.routes.ts` in a parent route carrying the port-to-adapter DI bindings. If a symbol is exported "just in case", delete it.
 8. Nothing to add in `tsconfig.json` - the `@modules/*` mapping already covers a new folder.
 9. Lazy-load it from `shell/app.routes.ts`.
 10. Nothing to add in `eslint.config.js` either - the element patterns are `modules/*/<layer>`, so a new module is governed as soon as its folders exist. Both of these were per-module chores in earlier drafts of this page; Phase 0 removed them deliberately, because a boundary that needs registering is a boundary somebody eventually forgets to register.
